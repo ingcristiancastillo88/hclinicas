@@ -11,22 +11,21 @@ import java.util.List;
 @Builder
 public class ConsultaResponse {
 
-    private Long id;
-    private Long historiaClinicaId;
+    private Long      id;
+    private Long      historiaClinicaId;
 
-    // Datos de la consulta
     private LocalDate fechaConsulta;
-    private String motivoConsulta;
+    private String    motivoConsulta;
 
     // Signos vitales
-    private Double peso;
-    private Double talla;
-    private String presionArterial;
+    private Double  peso;
+    private Double  talla;
+    private Double  imc;                    // calculado
+    private String  presionArterial;
     private Integer frecuenciaCardiaca;
-    private Double temperatura;
+    private Double  temperatura;
     private Integer saturacionOxigeno;
     private Integer semanasGestacion;
-    private Double imc;                     // Calculado: peso/talla²
 
     // Examen y diagnóstico
     private String examenFisico;
@@ -35,19 +34,19 @@ public class ConsultaResponse {
     private String codigoCie10;
 
     // Tratamiento
-    private String tratamiento;
-    private String medicacion;
-    private String indicaciones;
+    private String    tratamiento;
+    private String    medicacion;
+    private String    indicaciones;
     private LocalDate proximaCita;
-    private String observaciones;
+    private String    observaciones;
 
-    // Archivos adjuntos
+    // Archivos
     private List<ArchivoAdjuntoResponse> archivos;
     private Integer totalArchivos;
 
     // Auditoría
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;
-    private String creadoPor;
-    private String actualizadoPor;
+    private String        creadoPor;
+    private String        actualizadoPor;
 }

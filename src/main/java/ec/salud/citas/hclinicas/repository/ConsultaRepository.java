@@ -14,29 +14,28 @@ import java.util.Optional;
 public interface ConsultaRepository extends JpaRepository<Consulta, Long> {
 
     /**
-     * Historial completo de consultas de una historia clínica,
-     * ordenado de más reciente a más antigua (HU-011).
+     * Historial paginado de consultas activas, de más reciente a más antigua (HU-011).
      */
     @Query("""
             SELECT c FROM Consulta c
             WHERE c.historiaClinica.id = :historiaId
-            AND c.activa = true
+              AND c.activa = true
             ORDER BY c.fechaConsulta DESC, c.fechaCreacion DESC
             """)
-    Page<Consulta> findByHistoriaClinicaId(
+    Page<Consulta> findActivasByHistoriaId(
             @Param("historiaId") Long historiaId,
             Pageable pageable
     );
 
     /**
-     * Consulta con sus archivos adjuntos (evita N+1).
+     * Consulta con sus archivos cargados para evitar N+1.
      */
     @Query("""
             SELECT c FROM Consulta c
             LEFT JOIN FETCH c.archivos
             WHERE c.id = :id AND c.activa = true
             """)
-    Optional<Consulta> findByIdWithArchivos(@Param("id") Long id);
+    Optional<Consulta> findByIdConArchivos(@Param("id") Long id);
 
     long countByHistoriaClinicaIdAndActivaTrue(Long historiaId);
 }

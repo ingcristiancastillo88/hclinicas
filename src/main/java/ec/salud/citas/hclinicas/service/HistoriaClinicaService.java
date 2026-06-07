@@ -9,18 +9,17 @@ import ec.salud.citas.hclinicas.dto.response.HistoriaClinicaResponse;
 import ec.salud.citas.hclinicas.dto.response.PageResponse;
 import org.springframework.web.multipart.MultipartFile;
 
-
 public interface HistoriaClinicaService {
 
-    // ── Historia Clínica ──────────────────────────────────────────────────────
+    // Historia
     HistoriaClinicaResponse crearOActualizar(
             CrearHistoriaClinicaRequest request, String ipOrigen);
 
-    HistoriaClinicaResponse obtenerPorPaciente(Long pacienteId);
-
     HistoriaClinicaResponse obtenerPorId(Long id);
 
-    // ── Consultas ─────────────────────────────────────────────────────────────
+    HistoriaClinicaResponse obtenerPorPaciente(Long pacienteId);
+
+    // Consultas
     ConsultaResponse crearConsulta(
             CrearConsultaRequest request, String ipOrigen);
 
@@ -30,11 +29,11 @@ public interface HistoriaClinicaService {
     ConsultaResponse obtenerConsulta(Long consultaId);
 
     PageResponse<ConsultaResumenResponse> listarConsultas(
-            Long historiaClinicaId, int pagina, int tamano);
+            Long historiaId, int pagina, int tamano);
 
     void eliminarConsulta(Long consultaId, String ipOrigen);
 
-    // ── Archivos ──────────────────────────────────────────────────────────────
+    // Archivos
     void subirArchivo(Long consultaId, MultipartFile file,
                       String tipoArchivo, String descripcion, String ipOrigen);
 

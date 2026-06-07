@@ -8,6 +8,7 @@ import java.time.LocalDate;
 
 /**
  * DTO para actualizar una consulta existente (HU-010).
+ * Igual que CrearConsultaRequest pero sin historiaClinicaId.
  */
 @Data
 public class ActualizarConsultaRequest {

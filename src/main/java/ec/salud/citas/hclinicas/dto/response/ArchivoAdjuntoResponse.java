@@ -9,13 +9,13 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 public class ArchivoAdjuntoResponse {
-    private Long id;
-    private String nombreOriginal;
-    private String tipoMime;
-    private Long tamanoBytes;
+    private Long          id;
+    private String        nombreOriginal;
+    private String        tipoMime;
+    private Long          tamanoBytes;
     private TipoArchivo tipoArchivo;
-    private String descripcion;
-    private String urlDescarga;
+    private String        descripcion;
+    private String        urlDescarga;
     private LocalDateTime fechaCreacion;
-    private String creadoPor;
+    private String        creadoPor;
 }

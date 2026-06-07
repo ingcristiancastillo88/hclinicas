@@ -1,7 +1,22 @@
 package ec.salud.citas.hclinicas.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.OneToMany;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -13,10 +28,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entidad HistoriaClinica — agrupa todas las consultas de un paciente.
+ * Historia Clínica — agrupa todas las consultas de un paciente.
  * Un paciente tiene UNA historia clínica con MUCHAS consultas.
  *
- * HU-010 Registro · HU-011 Visualización · HU-020 Consulta paciente
+ * HU-010 · HU-011 · HU-020
  * Tabla: historias_clinicas
  */
 @Entity
@@ -33,23 +48,23 @@ public class HistoriaClinica {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Relación con Paciente — un paciente, una historia
+    // Un paciente → una historia clínica
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "paciente_id", nullable = false, unique = true)
     private Paciente paciente;
 
-    // Antecedentes gineco-obstétricos generales
-    @Column(name = "menarquia", length = 20)
-    private String menarquia;               // Edad primera menstruación
+    // ── Antecedentes gineco-obstétricos ───────────────────────────────────────
+    @Column(name = "menarquia", length = 30)
+    private String menarquia;
 
-    @Column(name = "ciclo_menstrual", length = 50)
-    private String cicloMenstrual;          // Regular/Irregular, duración
+    @Column(name = "ciclo_menstrual", length = 60)
+    private String cicloMenstrual;
 
-    @Column(name = "fecha_ultima_menstruacion")
+    @Column(name = "fecha_ultima_menstruacion", length = 30)
     private String fechaUltimaMenstruacion;
 
     @Column(name = "gestas")
-    private Integer gestas;                 // Número de embarazos
+    private Integer gestas;
 
     @Column(name = "partos")
     private Integer partos;
@@ -66,10 +81,10 @@ public class HistoriaClinica {
     @Column(name = "metodo_anticonceptivo", length = 100)
     private String metodoAnticonceptivo;
 
-    @Column(name = "ultimo_papanicolau", length = 50)
+    @Column(name = "ultimo_papanicolau", length = 100)
     private String ultimoPapanicolau;
 
-    @Column(name = "ultima_mamografia", length = 50)
+    @Column(name = "ultima_mamografia", length = 100)
     private String ultimaMamografia;
 
     @Column(name = "observaciones_generales", columnDefinition = "TEXT")
@@ -79,8 +94,9 @@ public class HistoriaClinica {
     @Builder.Default
     private Boolean activa = true;
 
-    // Relación con Consultas
-    @OneToMany(mappedBy = "historiaClinica", cascade = CascadeType.ALL,
+    // Una historia → muchas consultas
+    @OneToMany(mappedBy = "historiaClinica",
+            cascade = CascadeType.ALL,
             fetch = FetchType.LAZY)
     @Builder.Default
     private List<Consulta> consultas = new ArrayList<>();

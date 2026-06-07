@@ -1,7 +1,22 @@
 package ec.salud.citas.hclinicas.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.ManyToOne;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -14,10 +29,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entidad Consulta — registro individual de cada atención médica.
- * Pertenece a una HistoriaClinica y puede tener múltiples ArchivoAdjunto.
- * <p>
- * HU-010 Registro de consulta · HU-012 Adjuntar archivos
+ * Consulta — registro individual de cada atención médica.
+ * Pertenece a una HistoriaClinica, puede tener múltiples ArchivoAdjunto.
+ *
+ * HU-010 · HU-012
  * Tabla: consultas
  */
 @Entity
@@ -38,15 +53,14 @@ public class Consulta {
     @JoinColumn(name = "historia_clinica_id", nullable = false)
     private HistoriaClinica historiaClinica;
 
-    // ── Datos de la consulta ──────────────────────────────────────────────────
-
+    // ── Datos generales ───────────────────────────────────────────────────────
     @Column(name = "fecha_consulta", nullable = false)
     private LocalDate fechaConsulta;
 
     @Column(name = "motivo_consulta", nullable = false, columnDefinition = "TEXT")
     private String motivoConsulta;
 
-    // Signos vitales
+    // ── Signos vitales ────────────────────────────────────────────────────────
     @Column(name = "peso")
     private Double peso;                    // kg
 
@@ -66,13 +80,12 @@ public class Consulta {
     private Integer saturacionOxigeno;      // %
 
     @Column(name = "semanas_gestacion")
-    private Integer semanasGestacion;       // si aplica
+    private Integer semanasGestacion;
 
-    // Examen físico
+    // ── Examen y diagnóstico ──────────────────────────────────────────────────
     @Column(name = "examen_fisico", columnDefinition = "TEXT")
     private String examenFisico;
 
-    // Diagnóstico
     @Column(name = "diagnostico_principal", nullable = false, columnDefinition = "TEXT")
     private String diagnosticoPrincipal;
 
@@ -82,7 +95,7 @@ public class Consulta {
     @Column(name = "codigo_cie10", length = 20)
     private String codigoCie10;
 
-    // Tratamiento
+    // ── Tratamiento ───────────────────────────────────────────────────────────
     @Column(name = "tratamiento", columnDefinition = "TEXT")
     private String tratamiento;
 
@@ -92,7 +105,6 @@ public class Consulta {
     @Column(name = "indicaciones", columnDefinition = "TEXT")
     private String indicaciones;
 
-    // Próxima cita
     @Column(name = "proxima_cita")
     private LocalDate proximaCita;
 
@@ -104,8 +116,10 @@ public class Consulta {
     private Boolean activa = true;
 
     // ── Archivos adjuntos ─────────────────────────────────────────────────────
-    @OneToMany(mappedBy = "consulta", cascade = CascadeType.ALL,
-            fetch = FetchType.LAZY, orphanRemoval = true)
+    @OneToMany(mappedBy = "consulta",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY,
+            orphanRemoval = true)
     @Builder.Default
     private List<ArchivoAdjunto> archivos = new ArrayList<>();
 

@@ -4,8 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
- * DTO para crear o actualizar la historia clínica de un paciente.
- * Contiene los antecedentes gineco-obstétricos generales.
+ * DTO para crear o actualizar los antecedentes de una historia clínica.
  */
 @Data
 public class CrearHistoriaClinicaRequest {

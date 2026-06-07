@@ -1,8 +1,23 @@
 package ec.salud.citas.hclinicas.entity;
 
 import ec.salud.citas.hclinicas.enumerado.TipoArchivo;
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
+import jakarta.persistence.ManyToOne;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -10,10 +25,10 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 /**
- * Entidad ArchivoAdjunto — archivos vinculados a una consulta médica.
- * Se almacena en el servidor de archivos y se referencia con su ruta.
- * <p>
- * HU-012 Adjuntar archivos multimedia
+ * ArchivoAdjunto — archivos multimedia vinculados a una consulta.
+ * Se almacena en disco y se referencia con su ruta relativa.
+ *
+ * HU-012
  * Tabla: archivos_adjuntos
  */
 @Entity
@@ -35,16 +50,16 @@ public class ArchivoAdjunto {
     private Consulta consulta;
 
     @Column(name = "nombre_original", nullable = false, length = 255)
-    private String nombreOriginal;          // Nombre del archivo al subir
+    private String nombreOriginal;
 
     @Column(name = "nombre_almacenado", nullable = false, length = 255)
-    private String nombreAlmacenado;        // UUID + extensión en el servidor
+    private String nombreAlmacenado;
 
     @Column(name = "ruta_archivo", nullable = false, length = 500)
-    private String rutaArchivo;             // Ruta relativa en el servidor
+    private String rutaArchivo;
 
     @Column(name = "tipo_mime", length = 100)
-    private String tipoMime;                // image/jpeg, application/pdf, etc.
+    private String tipoMime;
 
     @Column(name = "tamano_bytes")
     private Long tamanoBytes;
