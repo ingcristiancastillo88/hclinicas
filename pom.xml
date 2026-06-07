@@ -15,7 +15,9 @@
 	<properties>
 		<java.version>21</java.version>
 		<jjwt.version>0.12.6</jjwt.version>
-	</properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
 	<dependencies>
  
         <!-- ── Spring Boot Core ── -->
@@ -74,6 +76,26 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+
+        <!-- iText7 — generación de PDF -->
+        <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>itext-core</artifactId>
+            <version>8.0.5</version>
+            <type>pom</type>
+        </dependency>
+
+        <!-- ZXing — generación de códigos QR -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>3.5.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>3.5.3</version>
+        </dependency>
  
         <!-- ── Test ── -->
         <dependency>
@@ -86,7 +108,7 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
- 
+
     </dependencies>
  
     <build>
@@ -105,5 +127,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

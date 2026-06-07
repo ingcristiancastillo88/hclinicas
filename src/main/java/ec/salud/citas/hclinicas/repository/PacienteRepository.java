@@ -23,7 +23,7 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
 
     boolean existsByCedulaAndIdNot(String cedula, Long id);
 
-    boolean existsByHistoriaNúmero(String historiaNúmero);
+    boolean existsByHistoriaNumero(String historiaNumero);
 
     Optional<Paciente> findByCedula(String cedula);
 
@@ -41,7 +41,7 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
                 OR LOWER(p.apellidos) LIKE LOWER(CONCAT('%', :busqueda, '%'))
                 OR p.cedula           LIKE CONCAT('%', :busqueda, '%')
                 OR LOWER(p.correo)    LIKE LOWER(CONCAT('%', :busqueda, '%'))
-                OR p.historiaNúmero   LIKE CONCAT('%', :busqueda, '%')
+                OR p.historiaNumero   LIKE CONCAT('%', :busqueda, '%')
             )
             ORDER BY p.apellidos ASC, p.nombres ASC
             """)

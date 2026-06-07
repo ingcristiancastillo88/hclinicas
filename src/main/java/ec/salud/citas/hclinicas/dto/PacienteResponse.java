@@ -22,7 +22,7 @@ public class PacienteResponse {
 
     // ── Datos de Identificación ───────────────────────────────────────────────
     private String cedula;
-    private String historiaNúmero;
+    private String historiaNumero;
     private String nombres;
     private String apellidos;
     private String nombreCompleto;

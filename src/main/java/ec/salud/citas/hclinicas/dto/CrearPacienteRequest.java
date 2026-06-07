@@ -24,7 +24,7 @@ public class CrearPacienteRequest {
     private String cedula;
 
     @Size(max = 20, message = "El número de historia no puede superar 20 caracteres")
-    private String historiaNúmero;
+    private String historiaNumero;
 
     @NotBlank(message = "Los nombres son obligatorios")
     @Size(max = 100, message = "Los nombres no pueden superar 100 caracteres")

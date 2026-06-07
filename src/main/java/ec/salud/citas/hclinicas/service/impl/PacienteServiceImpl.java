@@ -58,17 +58,17 @@ public class PacienteServiceImpl implements PacienteService {
         }
 
         // 3. Validar unicidad de número de historia si se proporciona
-        if (request.getHistoriaNúmero() != null && !request.getHistoriaNúmero().isBlank()
-                && pacienteRepository.existsByHistoriaNúmero(request.getHistoriaNúmero())) {
+        if (request.getHistoriaNumero() != null && !request.getHistoriaNumero().isBlank()
+                && pacienteRepository.existsByHistoriaNumero(request.getHistoriaNumero())) {
             throw new ReglaNegocioException(
                     "Ya existe un paciente con el número de historia: "
-                            + request.getHistoriaNúmero());
+                            + request.getHistoriaNumero());
         }
 
         // 4. Construir y persistir entidad
         Paciente paciente = Paciente.builder()
                 .cedula(request.getCedula())
-                .historiaNúmero(request.getHistoriaNúmero())
+                .historiaNumero(request.getHistoriaNumero())
                 .nombres(request.getNombres())
                 .apellidos(request.getApellidos())
                 .fechaNacimiento(request.getFechaNacimiento())
@@ -121,17 +121,17 @@ public class PacienteServiceImpl implements PacienteService {
         Paciente paciente = obtenerEntidad(id);
 
         // Validar unicidad de número de historia si cambia
-        if (request.getHistoriaNúmero() != null
-                && !request.getHistoriaNúmero().isBlank()
-                && !request.getHistoriaNúmero().equals(paciente.getHistoriaNúmero())
-                && pacienteRepository.existsByHistoriaNúmero(request.getHistoriaNúmero())) {
+        if (request.getHistoriaNumero() != null
+                && !request.getHistoriaNumero().isBlank()
+                && !request.getHistoriaNumero().equals(paciente.getHistoriaNumero())
+                && pacienteRepository.existsByHistoriaNumero(request.getHistoriaNumero())) {
             throw new ReglaNegocioException(
                     "Ya existe un paciente con el número de historia: "
-                            + request.getHistoriaNúmero());
+                            + request.getHistoriaNumero());
         }
 
         // Actualizar campos (la cédula NO se puede modificar)
-        paciente.setHistoriaNúmero(request.getHistoriaNúmero());
+        paciente.setHistoriaNumero(request.getHistoriaNumero());
         paciente.setNombres(request.getNombres());
         paciente.setApellidos(request.getApellidos());
         paciente.setFechaNacimiento(request.getFechaNacimiento());
@@ -264,7 +264,7 @@ public class PacienteServiceImpl implements PacienteService {
         return PacienteResponse.builder()
                 .id(p.getId())
                 .cedula(p.getCedula())
-                .historiaNúmero(p.getHistoriaNúmero())
+                .historiaNumero(p.getHistoriaNumero())
                 .nombres(p.getNombres())
                 .apellidos(p.getApellidos())
                 .nombreCompleto(p.getNombreCompleto())
@@ -303,7 +303,7 @@ public class PacienteServiceImpl implements PacienteService {
         return PacienteResumenResponse.builder()
                 .id(p.getId())
                 .cedula(p.getCedula())
-                .historiaNúmero(p.getHistoriaNúmero())
+                .historiaNumero(p.getHistoriaNumero())
                 .nombres(p.getNombres())
                 .apellidos(p.getApellidos())
                 .nombreCompleto(p.getNombreCompleto())

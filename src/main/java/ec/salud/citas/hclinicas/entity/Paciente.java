@@ -41,7 +41,7 @@ public class Paciente extends BaseEntity {
     private String cedula;
 
     @Column(name = "historia_numero", length = 20)
-    private String historiaNúmero;        // Número de historia clínica del consultorio
+    private String historiaNumero;        // Número de historia clínica del consultorio
 
     @Column(name = "nombres", nullable = false, length = 100)
     private String nombres;

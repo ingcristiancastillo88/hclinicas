@@ -24,7 +24,7 @@ public class ActualizarPacienteRequest {
     private String apellidos;
 
     @Size(max = 20)
-    private String historiaNúmero;
+    private String historiaNumero;
 
     @Past(message = "La fecha de nacimiento debe ser una fecha pasada")
     private LocalDate fechaNacimiento;
