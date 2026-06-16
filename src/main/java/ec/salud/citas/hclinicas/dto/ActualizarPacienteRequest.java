@@ -81,4 +81,5 @@ public class ActualizarPacienteRequest {
     private String antecedentesFamiliares;
     private String medicacionActual;
     private String observacionesGenerales;
+    private String tipoDocumento;
 }

@@ -25,6 +25,8 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
 
     boolean existsByHistoriaNumero(String historiaNumero);
 
+    long countByEstado(EstadoPaciente estado);
+
     Optional<Paciente> findByCedula(String cedula);
 
     /**

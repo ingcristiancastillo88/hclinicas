@@ -37,7 +37,7 @@ public class Paciente extends BaseEntity {
 
     // ── Datos de Identificación ───────────────────────────────────────────────
 
-    @Column(name = "cedula", nullable = false, length = 10)
+    @Column(name = "cedula", nullable = false)
     private String cedula;
 
     @Column(name = "historia_numero", length = 20)
@@ -119,6 +119,9 @@ public class Paciente extends BaseEntity {
 
     @Column(name = "medicacion_actual", columnDefinition = "TEXT")
     private String medicacionActual;
+
+    @Column(name = "tipo_documento", length = 20)
+    private String tipoDocumento;
 
     // ── Estado del Registro ───────────────────────────────────────────────────
 

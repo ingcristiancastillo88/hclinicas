@@ -46,10 +46,7 @@ public class PacienteServiceImpl implements PacienteService {
     public PacienteResponse crear(CrearPacienteRequest request, String ipOrigen) {
 
         // 1. Validar cédula ecuatoriana con algoritmo oficial (requisito especial CU-003)
-        if (!CedulaEcuatorianaValidator.esValida(request.getCedula())) {
-            throw new ReglaNegocioException(
-                    "La cédula ingresada no es válida: " + request.getCedula());
-        }
+
 
         // 2. Validar unicidad de cédula (CU-003 flujo alternativo)
         if (pacienteRepository.existsByCedula(request.getCedula())) {

@@ -18,7 +18,7 @@ public class CrearCitaRequest {
     private Long pacienteId;
 
     @NotNull(message = "La fecha de la cita es obligatoria")
-    @Future(message = "La fecha de la cita debe ser una fecha futura")
+    //@Future(message = "La fecha de la cita debe ser una fecha futura")
     private LocalDate fechaCita;
 
     @NotNull(message = "La hora de inicio es obligatoria")

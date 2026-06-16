@@ -18,9 +18,7 @@ public class CrearPacienteRequest {
 
     // ── Datos de Identificación ───────────────────────────────────────────────
 
-    @NotBlank(message = "La cédula es obligatoria")
-    @Size(min = 10, max = 10, message = "La cédula debe tener exactamente 10 dígitos")
-    @Pattern(regexp = "\\d{10}", message = "La cédula debe contener solo dígitos numéricos")
+    @NotBlank(message = "La identificacion es obligatoria")
     private String cedula;
 
     @Size(max = 20, message = "El número de historia no puede superar 20 caracteres")
@@ -76,6 +74,8 @@ public class CrearPacienteRequest {
 
     @Size(max = 100)
     private String provincia;
+
+    private String tipoDocumento;
 
     // ── Contacto de Emergencia ────────────────────────────────────────────────
 

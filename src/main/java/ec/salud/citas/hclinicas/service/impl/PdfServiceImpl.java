@@ -53,11 +53,11 @@ public class PdfServiceImpl implements PdfService {
     private final QrService                qrService;
 
     // Colores institucionales del sistema HClínicas
-    private static final DeviceRgb COLOR_PRIMARIO    = new DeviceRgb(10,  35,  66);   // Azul oscuro
-    private static final DeviceRgb COLOR_SECUNDARIO  = new DeviceRgb(15, 184, 173);   // Teal
-    private static final DeviceRgb COLOR_FONDO       = new DeviceRgb(248,250,252);    // Gris claro
-    private static final DeviceRgb COLOR_TEXTO_CLARO = new DeviceRgb(100,116,139);    // Gris texto
-    private static final DeviceRgb COLOR_BORDE       = new DeviceRgb(226,232,240);    // Borde gris
+    private static final DeviceRgb COLOR_PRIMARIO    = new DeviceRgb(220, 190, 210);
+    private static final DeviceRgb COLOR_SECUNDARIO  = new DeviceRgb(214, 58, 134);
+    private static final DeviceRgb COLOR_FONDO       = new DeviceRgb(252, 247, 250);
+    private static final DeviceRgb COLOR_TEXTO_CLARO = new DeviceRgb(90, 90, 90);
+    private static final DeviceRgb COLOR_BORDE       = new DeviceRgb(220, 190, 210);
 
     @Value("${app.clinica.nombre:Consultorio Gineco-Obstétrico}")
     private String nombreClinica;
@@ -105,7 +105,6 @@ public class PdfServiceImpl implements PdfService {
             String codigoQr  = UUID.randomUUID().toString().toUpperCase().substring(0, 16);
             String urlQr     = qrService.construirUrlVerificacion(codigoQr);
             byte[] imagenQr  = qrService.generarQr(urlQr, 150, 150);
-
             // ── Cabecera ──────────────────────────────────────────────────────
             agregarCabecera(document, fontBold, fontRegular,
                     imagenQr, codigoQr, "CONSULTA MÉDICA");
@@ -408,11 +407,32 @@ public class PdfServiceImpl implements PdfService {
                                  byte[] imagenQr, String codigoQr, String titulo)
             throws IOException {
 
+        Image logo = new Image(
+                ImageDataFactory.create(
+                        getClass()
+                                .getResourceAsStream("/imagenes/logo-dra.png")
+                                .readAllBytes()
+                )
+        );
+
+        logo.setWidth(90);
+
         // Tabla cabecera: Datos clínica | Título | QR
-        Table cabecera = new Table(UnitValue.createPercentArray(new float[]{3, 3, 1.5f}))
+        Table cabecera = new Table(
+                UnitValue.createPercentArray(
+                        new float[]{1.2f, 4f, 1.2f}
+                ))
                 .useAllAvailableWidth()
                 .setBackgroundColor(COLOR_PRIMARIO)
                 .setBorder(Border.NO_BORDER);
+
+        Cell celdaLogo = new Cell()
+                .setBorder(Border.NO_BORDER)
+                .setVerticalAlignment(VerticalAlignment.MIDDLE);
+
+        celdaLogo.add(logo);
+
+        cabecera.addCell(celdaLogo);
 
         // Columna izquierda: datos del consultorio
         Cell celdaClinica = new Cell().setBorder(Border.NO_BORDER)
@@ -422,27 +442,27 @@ public class PdfServiceImpl implements PdfService {
                 .setFont(fontBold).setFontSize(11).setFontColor(ColorConstants.WHITE));
         celdaClinica.add(new Paragraph(nombreEspecialista)
                 .setFont(fontBold).setFontSize(9)
-                .setFontColor(new DeviceRgb(15, 184, 173)));
+                .setFontColor(ColorConstants.WHITE));
         celdaClinica.add(new Paragraph(especialidad)
-                .setFont(fontRegular).setFontSize(8).setFontColor(ColorConstants.LIGHT_GRAY));
+                .setFont(fontRegular).setFontSize(8).setFontColor(ColorConstants.WHITE));
         celdaClinica.add(new Paragraph(direccionClinica)
-                .setFont(fontRegular).setFontSize(7).setFontColor(ColorConstants.LIGHT_GRAY));
+                .setFont(fontRegular).setFontSize(7).setFontColor(ColorConstants.WHITE));
         cabecera.addCell(celdaClinica);
 
         // Columna central: título del documento
-        Cell celdaTitulo = new Cell().setBorder(Border.NO_BORDER)
-                .setVerticalAlignment(VerticalAlignment.MIDDLE)
-                .setTextAlignment(TextAlignment.CENTER)
-                .setPadding(12);
-        celdaTitulo.add(new Paragraph(titulo)
-                .setFont(fontBold).setFontSize(14).setFontColor(ColorConstants.WHITE)
-                .setTextAlignment(TextAlignment.CENTER));
-        celdaTitulo.add(new Paragraph(
-                "Emitido: " + java.time.LocalDateTime.now().format(FORMATO_FECHA_HORA))
-                .setFont(fontRegular).setFontSize(7)
-                .setFontColor(ColorConstants.LIGHT_GRAY)
-                .setTextAlignment(TextAlignment.CENTER));
-        cabecera.addCell(celdaTitulo);
+//        Cell celdaTitulo = new Cell().setBorder(Border.NO_BORDER)
+//                .setVerticalAlignment(VerticalAlignment.MIDDLE)
+//                .setTextAlignment(TextAlignment.CENTER)
+//                .setPadding(12);
+//        celdaTitulo.add(new Paragraph(titulo)
+//                .setFont(fontBold).setFontSize(14).setFontColor(ColorConstants.WHITE)
+//                .setTextAlignment(TextAlignment.CENTER));
+//        celdaTitulo.add(new Paragraph(
+//                "Emitido: " + java.time.LocalDateTime.now().format(FORMATO_FECHA_HORA))
+//                .setFont(fontRegular).setFontSize(7)
+//                .setFontColor(ColorConstants.LIGHT_GRAY)
+//                .setTextAlignment(TextAlignment.CENTER));
+//        cabecera.addCell(celdaTitulo);
 
         // Columna derecha: imagen QR
         Cell celdaQr = new Cell().setBorder(Border.NO_BORDER)
@@ -459,6 +479,23 @@ public class PdfServiceImpl implements PdfService {
                 .setTextAlignment(TextAlignment.CENTER));
         cabecera.addCell(celdaQr);
 
+        Table tituloTabla = new Table(1)
+                .useAllAvailableWidth();
+
+        tituloTabla.addCell(
+                new Cell()
+                        .add(
+                                new Paragraph(titulo)
+                                        .setFont(fontBold)
+                                        .setFontSize(18)
+                                        .setTextAlignment(TextAlignment.CENTER)
+                        )
+                        .setBackgroundColor(COLOR_PRIMARIO)
+                        .setBorder(Border.NO_BORDER)
+        );
+
+        doc.add(tituloTabla);
+
         doc.add(cabecera);
         doc.add(new Paragraph("\n").setFontSize(6));
 
@@ -469,17 +506,23 @@ public class PdfServiceImpl implements PdfService {
         doc.add(new Paragraph("\n").setFontSize(4));
     }
 
-    private void agregarSeccion(Document doc, PdfFont fontBold, String titulo) {
+    private void agregarSeccion(
+            Document doc,
+            PdfFont fontBold,
+            String titulo) {
+
         Paragraph sec = new Paragraph(titulo)
                 .setFont(fontBold)
-                .setFontSize(9)
-                .setFontColor(ColorConstants.WHITE)
-                .setBackgroundColor(COLOR_PRIMARIO)
-                .setPaddingLeft(8)
-                .setPaddingTop(4)
+                .setFontSize(10)
+                .setFontColor(COLOR_PRIMARIO)
+                .setBackgroundColor(ColorConstants.WHITE)
+                .setBorderBottom(
+                        new SolidBorder(
+                                COLOR_SECUNDARIO,
+                                1f))
                 .setPaddingBottom(4)
-                .setMarginTop(8)
-                .setMarginBottom(4);
+                .setMarginTop(12);
+
         doc.add(sec);
     }
 

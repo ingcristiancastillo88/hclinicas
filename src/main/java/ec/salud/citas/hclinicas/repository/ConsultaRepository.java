@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Repository
@@ -38,4 +39,18 @@ public interface ConsultaRepository extends JpaRepository<Consulta, Long> {
     Optional<Consulta> findByIdConArchivos(@Param("id") Long id);
 
     long countByHistoriaClinicaIdAndActivaTrue(Long historiaId);
+
+    /**
+     * Cuenta las consultas activas creadas en un rango de fechas
+     * para las estadísticas del dashboard.
+     */
+    @Query("""
+        SELECT COUNT(c) FROM Consulta c
+        WHERE c.activa = true
+          AND c.fechaConsulta BETWEEN :inicio AND :fin
+        """)
+    long countByFechaConsultaBetweenAndActivaTrue(
+            @Param("inicio") LocalDate inicio,
+            @Param("fin")    LocalDate fin
+    );
 }
