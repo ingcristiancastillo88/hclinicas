@@ -18,8 +18,8 @@ public class CitaMedicaResumenResponse {
 
     private Long      id;
     private LocalDate fechaCita;
-    private LocalTime horaInicio;
-    private LocalTime horaFin;
+    private String horaInicio;
+    private String horaFin;
     private Integer   duracionMinutos;
     private TipoCita tipoCita;
     private String    motivoCita;

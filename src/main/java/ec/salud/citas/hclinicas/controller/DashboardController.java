@@ -147,8 +147,10 @@ public class DashboardController {
                 .map(c -> CitaMedicaResumenResponse.builder()
                         .id(c.getId())
                         .fechaCita(c.getFechaCita())
-                        .horaInicio(c.getHoraInicio())
-                        .horaFin(c.getHoraFin())
+                        .horaInicio(c.getHoraInicio() != null
+                                ? c.getHoraInicio().toString().substring(0, 5) : null)
+                        .horaFin(c.getHoraFin() != null
+                                ? c.getHoraFin().toString().substring(0, 5) : null)
                         .duracionMinutos(c.getDuracionMinutos())
                         .tipoCita(c.getTipoCita())
                         .motivoCita(c.getMotivoCita())
