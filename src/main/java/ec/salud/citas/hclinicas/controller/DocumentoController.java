@@ -1,8 +1,13 @@
 package ec.salud.citas.hclinicas.controller;
 
+import ec.salud.citas.hclinicas.dto.request.PedidoLaboratorioRequest;
 import ec.salud.citas.hclinicas.dto.request.RecetaRequest;
+import ec.salud.citas.hclinicas.dto.response.ApiResponse;
+import ec.salud.citas.hclinicas.entity.PedidoLaboratorio;
+import ec.salud.citas.hclinicas.entity.Receta;
 import ec.salud.citas.hclinicas.service.PdfService;
-import ec.salud.citas.hclinicas.service.impl.RecetaPdfServiceImpl;
+import ec.salud.citas.hclinicas.service.impl.PedidoLaboratorioServiceImpl;
+import ec.salud.citas.hclinicas.service.impl.RecetaServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -15,11 +20,18 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Controlador de generación de documentos PDF.
+ * Controller de documentos PDF.
  *
- * GET  /api/documentos/consulta/{id}    → PDF de la consulta
- * GET  /api/documentos/historia/{id}    → PDF de resumen de historia
- * POST /api/documentos/receta/{id}      → PDF de receta médica
+ * GET  /api/documentos/consulta/{id}             → PDF consulta
+ * GET  /api/documentos/historia/{id}             → PDF historia
+ *
+ * POST /api/documentos/receta/{id}/guardar       → Guarda receta en BD
+ * POST /api/documentos/receta/{id}/pdf           → Genera PDF receta
+ * GET  /api/documentos/receta/{id}               → Obtiene última receta
+ *
+ * POST /api/documentos/pedido/{id}/guardar       → Guarda pedido en BD
+ * POST /api/documentos/pedido/{id}/pdf           → Genera PDF pedido
+ * GET  /api/documentos/pedido/{id}               → Obtiene último pedido por tipo
  */
 @Slf4j
 @RestController
@@ -27,61 +39,123 @@ import java.time.format.DateTimeFormatter;
 @RequiredArgsConstructor
 public class DocumentoController {
 
-    private final PdfService          pdfService;
-    private final RecetaPdfServiceImpl recetaService;
+    private final PdfService                  pdfService;
+    private final RecetaServiceImpl           recetaService;
+    private final PedidoLaboratorioServiceImpl pedidoService;
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     // ── PDF Consulta ──────────────────────────────────────────────────────
 
     @GetMapping("/consulta/{consultaId}")
-    @PreAuthorize("hasAnyRole('SUPERADMINISTRADOR','ADMINISTRADOR'," +
-            "'MEDICO_ESPECIALISTA','PACIENTE')")
-    public ResponseEntity<byte[]> descargarConsulta(
-            @PathVariable Long consultaId) {
-
-        log.info("Generando PDF consulta ID: {}", consultaId);
-        byte[] pdf = pdfService.generarPdfConsulta(consultaId);
-
-        return pdfResponse(pdf,
-                "consulta_" + consultaId + "_" + LocalDate.now().format(FMT) + ".pdf");
+    @PreAuthorize("hasAnyRole('SUPERADMINISTRADOR','ADMINISTRADOR','MEDICO_ESPECIALISTA','PACIENTE')")
+    public ResponseEntity<byte[]> descargarConsulta(@PathVariable Long consultaId) {
+        log.info("PDF consulta ID: {}", consultaId);
+        return pdfResponse(pdfService.generarPdfConsulta(consultaId),
+                "consulta_" + consultaId + "_" + hoy() + ".pdf");
     }
-
-    // ── PDF Historia Clínica ──────────────────────────────────────────────
 
     @GetMapping("/historia/{historiaId}")
-    @PreAuthorize("hasAnyRole('SUPERADMINISTRADOR','ADMINISTRADOR'," +
-            "'MEDICO_ESPECIALISTA','PACIENTE')")
-    public ResponseEntity<byte[]> descargarHistoria(
-            @PathVariable Long historiaId) {
-
-        log.info("Generando PDF historia ID: {}", historiaId);
-        byte[] pdf = pdfService.generarPdfHistoria(historiaId);
-
-        return pdfResponse(pdf,
-                "historia_clinica_" + historiaId + "_" + LocalDate.now().format(FMT) + ".pdf");
+    @PreAuthorize("hasAnyRole('SUPERADMINISTRADOR','ADMINISTRADOR','MEDICO_ESPECIALISTA','PACIENTE')")
+    public ResponseEntity<byte[]> descargarHistoria(@PathVariable Long historiaId) {
+        log.info("PDF historia ID: {}", historiaId);
+        return pdfResponse(pdfService.generarPdfHistoria(historiaId),
+                "historia_" + historiaId + "_" + hoy() + ".pdf");
     }
 
-    // ── PDF Receta Médica ─────────────────────────────────────────────────
+    // ── RECETA ────────────────────────────────────────────────────────────
 
     /**
-     * Genera la receta médica en PDF a partir de los medicamentos
-     * y prescripción enviados desde el frontend.
-     *
-     * @param consultaId ID de la consulta asociada a la receta.
-     * @param receta     Datos de medicamentos e indicaciones.
+     * Guarda la receta en base de datos.
      */
-    @PostMapping("/receta/{consultaId}")
+    @PostMapping("/receta/{consultaId}/guardar")
     @PreAuthorize("hasAnyRole('SUPERADMINISTRADOR','MEDICO_ESPECIALISTA')")
-    public ResponseEntity<byte[]> generarReceta(
+    public ResponseEntity<ApiResponse<Long>> guardarReceta(
             @PathVariable Long consultaId,
-            @RequestBody RecetaRequest receta) {
+            @RequestBody RecetaRequest req) {
+        log.info("Guardando receta consulta ID: {}", consultaId);
+        Receta receta = recetaService.guardarReceta(consultaId, req);
+        return ResponseEntity.ok(
+                ApiResponse.ok("Receta guardada correctamente", receta.getId()));
+    }
 
-        log.info("Generando receta para consulta ID: {}", consultaId);
-        byte[] pdf = recetaService.generarRecetaPdf(consultaId, receta);
+    /**
+     * Genera el PDF de la receta (puede guardarse o no previamente).
+     */
+    @PostMapping("/receta/{consultaId}/pdf")
+    @PreAuthorize("hasAnyRole('SUPERADMINISTRADOR','MEDICO_ESPECIALISTA')")
+    public ResponseEntity<byte[]> generarPdfReceta(
+            @PathVariable Long consultaId,
+            @RequestBody RecetaRequest req) {
+        log.info("Generando PDF receta consulta ID: {}", consultaId);
+        byte[] pdf = recetaService.generarPdf(consultaId, req);
+        return pdfResponse(pdf, "receta_" + consultaId + "_" + hoy() + ".pdf");
+    }
 
-        return pdfResponse(pdf,
-                "receta_" + consultaId + "_" + LocalDate.now().format(FMT) + ".pdf");
+    /**
+     * Obtiene la última receta guardada para una consulta.
+     */
+    @GetMapping("/receta/{consultaId}")
+    @PreAuthorize("hasAnyRole('SUPERADMINISTRADOR','MEDICO_ESPECIALISTA','PACIENTE')")
+    public ResponseEntity<ApiResponse<RecetaRequest>> obtenerReceta(
+            @PathVariable Long consultaId) {
+        RecetaRequest receta = recetaService.obtenerUltimaReceta(consultaId);
+        if (receta == null) {
+            return ResponseEntity.ok(
+                    ApiResponse.<RecetaRequest>ok("Sin receta registrada"));
+        }
+        return ResponseEntity.ok(ApiResponse.ok("Receta encontrada", receta));
+    }
+
+    // ── PEDIDO LABORATORIO / IMAGENOLOGÍA ─────────────────────────────────
+
+    /**
+     * Guarda el pedido de laboratorio o imagenología en BD.
+     */
+    @PostMapping("/pedido/{consultaId}/guardar")
+    @PreAuthorize("hasAnyRole('SUPERADMINISTRADOR','MEDICO_ESPECIALISTA')")
+    public ResponseEntity<ApiResponse<Long>> guardarPedido(
+            @PathVariable Long consultaId,
+            @RequestBody PedidoLaboratorioRequest req) {
+        log.info("Guardando pedido {} consulta ID: {}", req.getTipo(), consultaId);
+        PedidoLaboratorio pedido = pedidoService.guardarPedido(consultaId, req);
+        return ResponseEntity.ok(
+                ApiResponse.ok("Pedido guardado correctamente", pedido.getId()));
+    }
+
+    /**
+     * Genera el PDF del pedido según el tipo (LABORATORIO o IMAGENOLOGIA).
+     */
+    @PostMapping("/pedido/{consultaId}/pdf")
+    @PreAuthorize("hasAnyRole('SUPERADMINISTRADOR','MEDICO_ESPECIALISTA')")
+    public ResponseEntity<byte[]> generarPdfPedido(
+            @PathVariable Long consultaId,
+            @RequestBody PedidoLaboratorioRequest req) {
+        log.info("Generando PDF pedido {} consulta ID: {}", req.getTipo(), consultaId);
+        byte[] pdf;
+        if ("IMAGENOLOGIA".equalsIgnoreCase(req.getTipo())) {
+            pdf = pedidoService.generarPdfImagenologia(consultaId, req);
+        } else {
+            pdf = pedidoService.generarPdfLaboratorio(consultaId, req);
+        }
+        String prefix = "IMAGENOLOGIA".equalsIgnoreCase(req.getTipo()) ? "imagenologia" : "laboratorio";
+        return pdfResponse(pdf, prefix + "_" + consultaId + "_" + hoy() + ".pdf");
+    }
+
+    /**
+     * Obtiene el último pedido guardado para una consulta por tipo.
+     */
+    @GetMapping("/pedido/{consultaId}")
+    @PreAuthorize("hasAnyRole('SUPERADMINISTRADOR','MEDICO_ESPECIALISTA','PACIENTE')")
+    public ResponseEntity<ApiResponse<PedidoLaboratorioRequest>> obtenerPedido(
+            @PathVariable Long consultaId,
+            @RequestParam(defaultValue = "LABORATORIO") String tipo) {
+        PedidoLaboratorioRequest pedido = pedidoService.obtenerUltimoPedido(consultaId, tipo);
+        if (pedido == null) {
+            return ResponseEntity.ok(
+                    ApiResponse.<PedidoLaboratorioRequest>ok("Sin pedido registrado"));
+        }
+        return ResponseEntity.ok(ApiResponse.ok("Pedido encontrado", pedido));
     }
 
     // ── Helper ────────────────────────────────────────────────────────────
@@ -90,9 +164,12 @@ public class DocumentoController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + filename + "\"")
-                .header(HttpHeaders.CONTENT_TYPE,
-                        MediaType.APPLICATION_PDF_VALUE)
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE)
                 .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(pdf.length))
                 .body(pdf);
+    }
+
+    private String hoy() {
+        return LocalDate.now().format(FMT);
     }
 }
