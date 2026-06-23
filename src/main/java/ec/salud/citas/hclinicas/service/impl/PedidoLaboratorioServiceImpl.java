@@ -194,11 +194,11 @@ public class PedidoLaboratorioServiceImpl {
             for (String tipo : tiposEstudio) {
                 boolean sel = tipo.equals(tipoSel) || tipo.equals(req.getTipoEstudio());
                 Cell cell = new Cell()
-                        .setBackgroundColor(MORADO)
+                        .setBackgroundColor(sel ? new DeviceRgb(22, 163, 74) : MORADO)
                         .setBorder(new SolidBorder(BLANCO, 2))
                         .setPadding(4)
                         .setTextAlignment(TextAlignment.CENTER);
-                cell.add(new Paragraph((sel ? "☑ " : "☐ ") + tipo)
+                cell.add(new Paragraph((sel ? "✔ " : "☐ ") + tipo)
                         .setFont(bold).setFontSize(7)
                         .setFontColor(BLANCO).setMargin(0));
                 tabTipos.addCell(cell);
@@ -469,10 +469,23 @@ public class PedidoLaboratorioServiceImpl {
 
         for (String examen : todos) {
             boolean sel = seleccionados.contains(examen);
-            container.add(new Paragraph((sel ? "☑ " : "☐ ") + examen)
-                    .setFont(regular).setFontSize(7)
-                    .setFontColor(sel ? MORADO : AZUL)
-                    .setMarginBottom(2).setMarginLeft(2));
+
+            Paragraph p = new Paragraph().setMarginBottom(2).setMarginLeft(2);
+
+            if (sel) {
+                // Checkbox marcado: tilde verde grande + texto en negrita destacado
+                p.add(new Text("✔ ").setFont(bold).setFontSize(9)
+                        .setFontColor(new DeviceRgb(22, 163, 74)));
+                p.add(new Text(examen).setFont(bold).setFontSize(7.5f)
+                        .setFontColor(MORADO));
+            } else {
+                p.add(new Text("☐ ").setFont(regular).setFontSize(7)
+                        .setFontColor(GRIS));
+                p.add(new Text(examen).setFont(regular).setFontSize(7)
+                        .setFontColor(AZUL));
+            }
+
+            container.add(p);
         }
     }
 
@@ -580,9 +593,5 @@ public class PedidoLaboratorioServiceImpl {
             result[i] = i < parts.length ? parts[i] : "";
         }
         return result;
-    }
-
-    private String getMotivoSolicitud(PedidoLaboratorioRequest req) {
-        return req.getMotivoSolicitud() != null ? req.getMotivoSolicitud() : "";
     }
 }
