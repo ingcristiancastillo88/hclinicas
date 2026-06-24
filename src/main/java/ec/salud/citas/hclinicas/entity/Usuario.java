@@ -14,12 +14,14 @@ import java.util.List;
  * Entidad Usuario - implementa UserDetails para integración con Spring Security.
  * Contempla HU-001, HU-002, HU-003, HU-004.
  * Tabla: usuarios
+ * NOTA: El correo electrónico se almacena en el campo "correo" (columna: correo).
+ * No existe columna "email" — se eliminó para evitar duplicidad.
  */
 @Entity
 @Table(name = "usuarios",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = "correo", name = "uk_usuario_correo"),
-                @UniqueConstraint(columnNames = "cedula", name = "uk_usuario_cedula")
+                @UniqueConstraint(columnNames = "cedula",  name = "uk_usuario_cedula")
         })
 @Getter
 @Setter
@@ -41,6 +43,7 @@ public class Usuario extends BaseEntity implements UserDetails {
     @Column(name = "cedula", length = 13)
     private String cedula;
 
+    /** Correo electrónico — también es el username para login */
     @Column(name = "correo", nullable = false, length = 150)
     private String correo;
 
@@ -59,6 +62,15 @@ public class Usuario extends BaseEntity implements UserDetails {
     @Builder.Default
     private EstadoUsuario estado = EstadoUsuario.ACTIVO;
 
+    /**
+     * Flag de contraseña temporal.
+     * true  → el usuario debe cambiarla en el primer login.
+     * false → contraseña ya personalizada por el usuario.
+     */
+    @Builder.Default
+    @Column(name = "password_temporal", nullable = false)
+    private Boolean passwordTemporal = false;
+
     // ── Spring Security UserDetails ────────────────────────────────────────────
 
     @Override
@@ -66,29 +78,24 @@ public class Usuario extends BaseEntity implements UserDetails {
         return List.of(new SimpleGrantedAuthority(rol.getNombre().name()));
     }
 
+    /** Spring Security usa contrasena como password */
     @Override
     public String getPassword() {
         return contrasena;
     }
 
+    /** Spring Security usa correo como username */
     @Override
     public String getUsername() {
-        return correo;   // El login se realiza con correo electrónico
+        return correo;
     }
 
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
+    @Override public boolean isAccountNonExpired()    { return true; }
+    @Override public boolean isCredentialsNonExpired(){ return true; }
 
     @Override
     public boolean isAccountNonLocked() {
         return estado != EstadoUsuario.ELIMINADO;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
     }
 
     @Override
@@ -97,6 +104,7 @@ public class Usuario extends BaseEntity implements UserDetails {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
     public String getNombreCompleto() {
         return nombres + " " + apellidos;
     }

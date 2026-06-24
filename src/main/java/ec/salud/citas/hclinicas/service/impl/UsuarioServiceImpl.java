@@ -1,6 +1,5 @@
 package ec.salud.citas.hclinicas.service.impl;
 
-
 import ec.salud.citas.hclinicas.dto.ActualizarUsuarioRequest;
 import ec.salud.citas.hclinicas.dto.CrearUsuarioRequest;
 import ec.salud.citas.hclinicas.dto.response.PageResponse;
@@ -13,6 +12,7 @@ import ec.salud.citas.hclinicas.exception.ReglaNegocioException;
 import ec.salud.citas.hclinicas.repository.RolRepository;
 import ec.salud.citas.hclinicas.repository.UsuarioRepository;
 import ec.salud.citas.hclinicas.service.AuditoriaService;
+import ec.salud.citas.hclinicas.service.EmailService;
 import ec.salud.citas.hclinicas.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,10 +24,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.security.SecureRandom;
+
 /**
  * Implementación del servicio de usuarios.
- * Aplica BCrypt en contraseñas, valida unicidad de correo
- * y registra auditoría en cada operación (HU-004, HU-005, HU-006).
+ * Aplica BCrypt en contraseñas, valida unicidad de correo,
+ * genera contraseña temporal y envía email de bienvenida.
+ * Registra auditoría en cada operación (HU-004, HU-005, HU-006).
  */
 @Slf4j
 @Service
@@ -35,9 +38,10 @@ import org.springframework.util.StringUtils;
 public class UsuarioServiceImpl implements UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
-    private final RolRepository rolRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final AuditoriaService auditoriaService;
+    private final RolRepository     rolRepository;
+    private final PasswordEncoder   passwordEncoder;
+    private final AuditoriaService  auditoriaService;
+    private final EmailService      emailService;       // ← inyectado
 
     // ── Crear ─────────────────────────────────────────────────────────────────
 
@@ -45,17 +49,17 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Transactional
     public UsuarioResponse crear(CrearUsuarioRequest request, String ipOrigen) {
 
-        // Validar correo único (CU-002 flujo alternativo: "Correo ya existente")
+        // Validar correo único (CU-002: "Correo ya existente")
         if (usuarioRepository.existsByCorreo(request.getCorreo())) {
-            throw new ReglaNegocioException("Ya existe un usuario con el correo: "
-                    + request.getCorreo());
+            throw new ReglaNegocioException(
+                    "Ya existe un usuario con el correo: " + request.getCorreo());
         }
 
         // Validar cédula única si se proporciona
         if (StringUtils.hasText(request.getCedula())
                 && usuarioRepository.existsByCedula(request.getCedula())) {
-            throw new ReglaNegocioException("Ya existe un usuario con la cédula: "
-                    + request.getCedula());
+            throw new ReglaNegocioException(
+                    "Ya existe un usuario con la cédula: " + request.getCedula());
         }
 
         // Obtener rol
@@ -63,13 +67,18 @@ public class UsuarioServiceImpl implements UsuarioService {
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Rol no encontrado con ID: " + request.getRolId()));
 
-        // Construir entidad
+        // Generar contraseña temporal
+        String passwordTemporal = generarPasswordTemporal();
+
+        // Construir entidad usando los campos reales de tu entidad:
+        // correo (no email), contrasena (no password)
         Usuario usuario = Usuario.builder()
                 .nombres(request.getNombres())
                 .apellidos(request.getApellidos())
                 .cedula(request.getCedula())
                 .correo(request.getCorreo())
-                .contrasena(passwordEncoder.encode(request.getContrasena()))
+                .contrasena(passwordEncoder.encode(passwordTemporal))  // ← contrasena
+                .passwordTemporal(false)                                 // ← flag temporal
                 .telefono(request.getTelefono())
                 .rol(rol)
                 .estado(EstadoUsuario.ACTIVO)
@@ -77,12 +86,19 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         usuario = usuarioRepository.save(usuario);
 
+//        // Enviar correo de bienvenida con contraseña temporal (asíncrono)
+//        emailService.enviarBienvenida(
+//                usuario.getCorreo(),           // correo = username
+//                usuario.getNombreCompleto(),
+//                passwordTemporal               // en texto plano, solo aquí
+//        );
+
         // Auditoría (HU-006)
         auditoriaService.registrar(
                 "CREATE", "USUARIOS",
-                "Usuario creado: " + usuario.getNombreCompleto() +
-                        " - Correo: " + usuario.getCorreo() +
-                        " - Rol: " + rol.getNombre().name(),
+                "Usuario creado: " + usuario.getNombreCompleto()
+                        + " - Correo: " + usuario.getCorreo()
+                        + " - Rol: " + rol.getNombre().name(),
                 ipOrigen
         );
 
@@ -101,8 +117,8 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         // Validar correo único excluyendo al propio usuario
         if (usuarioRepository.existsByCorreoAndIdNot(request.getCorreo(), id)) {
-            throw new ReglaNegocioException("Ya existe un usuario con el correo: "
-                    + request.getCorreo());
+            throw new ReglaNegocioException(
+                    "Ya existe un usuario con el correo: " + request.getCorreo());
         }
 
         Rol rol = rolRepository.findById(request.getRolId())
@@ -127,8 +143,8 @@ public class UsuarioServiceImpl implements UsuarioService {
         // Auditoría
         auditoriaService.registrar(
                 "UPDATE", "USUARIOS",
-                "Usuario actualizado: " + usuario.getNombreCompleto() +
-                        " - Correo: " + usuario.getCorreo(),
+                "Usuario actualizado: " + usuario.getNombreCompleto()
+                        + " - Correo: " + usuario.getCorreo(),
                 ipOrigen
         );
 
@@ -212,5 +228,19 @@ public class UsuarioServiceImpl implements UsuarioService {
                 .fechaActualizacion(u.getFechaActualizacion())
                 .creadoPor(u.getCreadoPor())
                 .build();
+    }
+
+    /**
+     * Genera una contraseña temporal segura de 10 caracteres.
+     * Mezcla mayúsculas, minúsculas y números.
+     */
+    public static String generarPasswordTemporal() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(10);
+        for (int i = 0; i < 10; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 }

@@ -1,6 +1,5 @@
 package ec.salud.citas.hclinicas.config;
 
-
 import ec.salud.citas.hclinicas.entity.Rol;
 import ec.salud.citas.hclinicas.entity.Usuario;
 import ec.salud.citas.hclinicas.enumerado.EstadoUsuario;
@@ -24,13 +23,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @RequiredArgsConstructor
 public class DataInitializer {
 
-    private final RolRepository rolRepository;
+    private final RolRepository     rolRepository;
     private final UsuarioRepository usuarioRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final PasswordEncoder   passwordEncoder;
 
     @Bean
     public CommandLineRunner initData() {
         return args -> {
+
             // ── 1. Crear roles si no existen ──────────────────────────────────
             crearRolSiNoExiste(RolNombre.ROLE_SUPERADMINISTRADOR,
                     "Acceso total al sistema - configuración técnica y base de datos");
@@ -51,6 +51,7 @@ public class DataInitializer {
                         .apellidos("Administrador")
                         .correo("admin@hclinicas.com")
                         .contrasena(passwordEncoder.encode("Admin@2026!"))
+                        .passwordTemporal(false)   // ← explícito: admin no necesita cambiar
                         .rol(rolAdmin)
                         .estado(EstadoUsuario.ACTIVO)
                         .build();
