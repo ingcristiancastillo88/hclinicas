@@ -1,6 +1,8 @@
 package ec.salud.citas.hclinicas.service.impl;
 
 import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.layout.element.Image;
 import com.itextpdf.kernel.colors.DeviceRgb;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
@@ -11,6 +13,7 @@ import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.borders.SolidBorder;
 import com.itextpdf.layout.element.*;
+import com.itextpdf.layout.properties.HorizontalAlignment;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
 import com.itextpdf.layout.properties.VerticalAlignment;
@@ -212,16 +215,36 @@ public class RecetaServiceImpl {
                 .useAllAvailableWidth()
                 .setBackgroundColor(ROSA_CLARO);
 
-        // Ícono mujer embarazada (placeholder circular rosa)
+        // Logo PNG del consultorio
         Cell iconoCell = new Cell().setBorder(Border.NO_BORDER)
-                .setPaddingLeft(10).setPaddingTop(8).setPaddingBottom(8)
+                .setPaddingLeft(8).setPaddingTop(6).setPaddingBottom(6)
                 .setVerticalAlignment(VerticalAlignment.MIDDLE);
-        // Círculo decorativo con texto
-        iconoCell.add(new Paragraph("♀")
-                .setFont(bold).setFontSize(28)
-                .setFontColor(ROSA)
-                .setTextAlignment(TextAlignment.CENTER)
-                .setMargin(0));
+        try {
+            byte[] logoBytes = getClass().getClassLoader()
+                    .getResourceAsStream("static/logo.png") != null
+                    ? getClass().getClassLoader()
+                    .getResourceAsStream("static/logo.png").readAllBytes()
+                    : null;
+            if (logoBytes != null) {
+                Image logo = new Image(ImageDataFactory.create(logoBytes))
+                        .setWidth(52).setHeight(52)
+                        .setHorizontalAlignment(HorizontalAlignment.CENTER);
+                iconoCell.add(logo);
+            } else {
+                // Fallback: símbolo si no se carga el logo
+                iconoCell.add(new Paragraph("♀")
+                        .setFont(bold).setFontSize(28)
+                        .setFontColor(ROSA)
+                        .setTextAlignment(TextAlignment.CENTER)
+                        .setMargin(0));
+            }
+        } catch (Exception e) {
+            iconoCell.add(new Paragraph("♀")
+                    .setFont(bold).setFontSize(28)
+                    .setFontColor(ROSA)
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setMargin(0));
+        }
         t.addCell(iconoCell);
 
         // Nombre y especialidad

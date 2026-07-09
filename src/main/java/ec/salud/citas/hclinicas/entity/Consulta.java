@@ -139,4 +139,10 @@ public class Consulta {
     @LastModifiedBy
     @Column(name = "actualizado_por", length = 100)
     private String actualizadoPor;
+
+    @Column(name = "fecha_ultima_menstruacion")
+    private LocalDate fechaUltimaMenustracion;
+
+    @Column(name = "codigos_cie10_secundarios", columnDefinition = "TEXT")
+    private String codigosCie10SecundariosJson;
 }

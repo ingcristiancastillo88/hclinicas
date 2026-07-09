@@ -191,14 +191,17 @@ public class PedidoLaboratorioServiceImpl {
             String tipoSel = exs != null && exs.containsKey("tipoEstudio")
                     ? exs.get("tipoEstudio").stream().findFirst().orElse("") : "";
 
+            DeviceRgb VERDE = new DeviceRgb(22, 163, 74);
             for (String tipo : tiposEstudio) {
                 boolean sel = tipo.equals(tipoSel) || tipo.equals(req.getTipoEstudio());
                 Cell cell = new Cell()
-                        .setBackgroundColor(sel ? new DeviceRgb(22, 163, 74) : MORADO)
+                        .setBackgroundColor(sel ? VERDE : MORADO)
                         .setBorder(new SolidBorder(BLANCO, 2))
                         .setPadding(4)
                         .setTextAlignment(TextAlignment.CENTER);
-                cell.add(new Paragraph((sel ? "✔ " : "☐ ") + tipo)
+                // Prefijo visual: "[X]" cuando seleccionado, "[ ]" cuando no
+                String prefijo = sel ? "[X] " : "[ ] ";
+                cell.add(new Paragraph(prefijo + tipo)
                         .setFont(bold).setFontSize(7)
                         .setFontColor(BLANCO).setMargin(0));
                 tabTipos.addCell(cell);
@@ -222,8 +225,9 @@ public class PedidoLaboratorioServiceImpl {
                     .add(new Paragraph()
                             .add(new Text("MONITOREO FETAL ELECTRÓNICO  ").setFont(bold).setFontSize(8))
                             .add(new Text(req.getMonitoreoFetal() != null && req.getMonitoreoFetal()
-                                    ? "☑" : "☐").setFont(bold).setFontSize(10)
-                                    .setFontColor(ROSA))));
+                                    ? "[X] " : "[ ]").setFont(bold).setFontSize(9)
+                                    .setFontColor(req.getMonitoreoFetal() != null && req.getMonitoreoFetal()
+                                            ? new DeviceRgb(22,163,74) : GRIS))));
             monFetal.addCell(campoLinea(bold, regular, "FUM: ", req.getFum(), false));
             monFetal.addCell(campoLinea(bold, regular, "EG: ", req.getEg(), false));
             doc.add(monFetal);
@@ -291,16 +295,20 @@ public class PedidoLaboratorioServiceImpl {
             Table row2 = new Table(UnitValue.createPercentArray(new float[]{2.5f, 0.6f, 0.6f, 1.3f}))
                     .useAllAvailableWidth().setMarginBottom(8);
             row2.addCell(campoLinea(bold, regular, "C.I.: ", pac.getCedula() != null ? pac.getCedula() : "", true));
+            boolean embarazoSi = req.getEmbarazo() != null && req.getEmbarazo();
+            boolean embarazoNo = req.getEmbarazo() != null && !req.getEmbarazo();
             row2.addCell(new Cell().setBorder(Border.NO_BORDER)
                     .add(new Paragraph()
-                            .add(new Text("Embarazo: Sí ").setFont(regular).setFontSize(8))
-                            .add(new Text(req.getEmbarazo() != null && req.getEmbarazo() ? "☑" : "☐")
-                                    .setFont(bold).setFontSize(9))));
+                            .add(new Text("Embarazo: Si ").setFont(regular).setFontSize(8))
+                            .add(new Text(embarazoSi ? "[X] " : "[ ]")
+                                    .setFont(bold).setFontSize(8)
+                                    .setFontColor(embarazoSi ? new DeviceRgb(22,163,74) : GRIS))));
             row2.addCell(new Cell().setBorder(Border.NO_BORDER)
                     .add(new Paragraph()
                             .add(new Text("No ").setFont(regular).setFontSize(8))
-                            .add(new Text(req.getEmbarazo() != null && !req.getEmbarazo() ? "☑" : "☐")
-                                    .setFont(bold).setFontSize(9))));
+                            .add(new Text(embarazoNo ? "[X] " : "[ ]")
+                                    .setFont(bold).setFontSize(8)
+                                    .setFontColor(embarazoNo ? new DeviceRgb(22,163,74) : GRIS))));
             row2.addCell(campoLinea(bold, regular, "Sem/Gestación: ",
                     req.getSemGestacion() != null ? req.getSemGestacion() : "", false));
             doc.add(row2);
@@ -467,25 +475,61 @@ public class PedidoLaboratorioServiceImpl {
                 .setBackgroundColor(MORADO)
                 .setPadding(3).setMarginBottom(2).setMarginTop(4));
 
+        DeviceRgb VERDE = new DeviceRgb(22, 163, 74);
+
         for (String examen : todos) {
             boolean sel = seleccionados.contains(examen);
 
-            Paragraph p = new Paragraph().setMarginBottom(2).setMarginLeft(2);
+            // Usamos una mini-tabla de 2 columnas: [checkbox | texto]
+            // Esto evita el problema de caracteres Unicode que Helvetica no renderiza
+            Table fila = new Table(UnitValue.createPercentArray(new float[]{0.5f, 9.5f}))
+                    .useAllAvailableWidth()
+                    .setMarginBottom(2).setMarginLeft(1);
 
             if (sel) {
-                // Checkbox marcado: tilde verde grande + texto en negrita destacado
-                p.add(new Text("✔ ").setFont(bold).setFontSize(9)
-                        .setFontColor(new DeviceRgb(22, 163, 74)));
-                p.add(new Text(examen).setFont(bold).setFontSize(7.5f)
-                        .setFontColor(MORADO));
+                // Checkbox marcado: celda verde rellena con "v" en blanco
+                Cell chk = new Cell()
+                        .setBorder(new SolidBorder(VERDE, 0.8f))
+                        .setBackgroundColor(VERDE)
+                        .setPadding(0).setPaddingLeft(1)
+                        .setVerticalAlignment(VerticalAlignment.MIDDLE);
+                chk.add(new Paragraph("v")
+                        .setFont(bold).setFontSize(6)
+                        .setFontColor(BLANCO)
+                        .setMargin(0).setTextAlignment(TextAlignment.CENTER));
+                fila.addCell(chk);
+
+                Cell txt = new Cell()
+                        .setBorder(Border.NO_BORDER)
+                        .setPadding(0)
+                        .setPaddingLeft(6)
+                        .setVerticalAlignment(VerticalAlignment.MIDDLE);
+                txt.add(new Paragraph(examen)
+                        .setFont(bold).setFontSize(7.5f)
+                        .setFontColor(MORADO).setMargin(0));
+                fila.addCell(txt);
             } else {
-                p.add(new Text("☐ ").setFont(regular).setFontSize(7)
-                        .setFontColor(GRIS));
-                p.add(new Text(examen).setFont(regular).setFontSize(7)
-                        .setFontColor(AZUL));
+                // Checkbox vacío: solo borde, sin relleno
+                Cell chk = new Cell()
+                        .setBorder(new SolidBorder(GRIS, 0.8f))
+                        .setPadding(0)
+                        .setVerticalAlignment(VerticalAlignment.MIDDLE);
+                chk.add(new Paragraph(" ")
+                        .setFont(regular).setFontSize(6).setMargin(0));
+                fila.addCell(chk);
+
+                Cell txt = new Cell()
+                        .setBorder(Border.NO_BORDER)
+                        .setPadding(0)
+                        .setPaddingLeft(6)
+                        .setVerticalAlignment(VerticalAlignment.MIDDLE);
+                txt.add(new Paragraph(examen)
+                        .setFont(regular).setFontSize(7)
+                        .setFontColor(AZUL).setMargin(0));
+                fila.addCell(txt);
             }
 
-            container.add(p);
+            container.add(fila);
         }
     }
 

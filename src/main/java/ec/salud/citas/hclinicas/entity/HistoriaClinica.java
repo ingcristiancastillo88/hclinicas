@@ -1,17 +1,6 @@
 package ec.salud.citas.hclinicas.entity;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Table;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -117,4 +106,24 @@ public class HistoriaClinica {
     @LastModifiedBy
     @Column(name = "actualizado_por", length = 100)
     private String actualizadoPor;
+
+    /**
+     * Número único de historia clínica en formato HC-{id}.
+     * Se genera automáticamente después del INSERT usando @PostPersist.
+     */
+    @Column(name = "numero_historia", length = 20, unique = true)
+    private String numeroHistoria;
+
+    /**
+     * Genera el número de historia automáticamente tras persistir
+     * usando el ID generado por la BD.
+     * Formato: HC-1, HC-2, HC-100, etc.
+     */
+    @PostPersist
+    public void generarNumeroHistoria() {
+        if (this.numeroHistoria == null) {
+            this.numeroHistoria = "HC-" + this.id;
+        }
+    }
+
 }
