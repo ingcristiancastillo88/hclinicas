@@ -6,6 +6,7 @@ import ec.salud.citas.hclinicas.dto.response.ApiResponse;
 import ec.salud.citas.hclinicas.entity.PedidoLaboratorio;
 import ec.salud.citas.hclinicas.entity.Receta;
 import ec.salud.citas.hclinicas.service.PdfService;
+import ec.salud.citas.hclinicas.service.impl.PdfConsultaServiceImpl;
 import ec.salud.citas.hclinicas.service.impl.PedidoLaboratorioServiceImpl;
 import ec.salud.citas.hclinicas.service.impl.RecetaServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -39,9 +40,10 @@ import java.time.format.DateTimeFormatter;
 @RequiredArgsConstructor
 public class DocumentoController {
 
-    private final PdfService                  pdfService;
-    private final RecetaServiceImpl           recetaService;
+    private final PdfService                   pdfService;
+    private final RecetaServiceImpl            recetaService;
     private final PedidoLaboratorioServiceImpl pedidoService;
+    private final PdfConsultaServiceImpl pdfConsultaService;  // ← AGREGA ESTO
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -51,7 +53,8 @@ public class DocumentoController {
     @PreAuthorize("hasAnyRole('SUPERADMINISTRADOR','ADMINISTRADOR','MEDICO_ESPECIALISTA','PACIENTE')")
     public ResponseEntity<byte[]> descargarConsulta(@PathVariable Long consultaId) {
         log.info("PDF consulta ID: {}", consultaId);
-        return pdfResponse(pdfService.generarPdfConsulta(consultaId),
+        // Usa el nuevo servicio con todas las secciones clínicas
+        return pdfResponse(pdfConsultaService.generarPdf(consultaId),
                 "consulta_" + consultaId + "_" + hoy() + ".pdf");
     }
 

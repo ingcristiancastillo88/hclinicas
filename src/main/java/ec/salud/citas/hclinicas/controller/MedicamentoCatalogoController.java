@@ -1,10 +1,10 @@
 package ec.salud.citas.hclinicas.controller;
 
-import ec.salud.citas.hclinicas.dto.request.RecetaRequest.MedicamentoRequest;
 import ec.salud.citas.hclinicas.dto.response.ApiResponse;
 import ec.salud.citas.hclinicas.dto.response.MedicamentoCatalogoResponse;
 import ec.salud.citas.hclinicas.entity.Medicamento;
 import ec.salud.citas.hclinicas.repository.MedicamentoCatalogoRepository;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -19,12 +19,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Controller del catálogo simple de medicamentos para autocompletado.
- * NO es un inventario — solo guarda lo que el médico ha escrito antes
- * para sugerirlo en futuras recetas.
+ * Catálogo de medicamentos para autocompletado.
+ * Guarda UN registro por nombre genérico — sin dosis ni cantidades.
  *
- * GET  /api/medicamentos/buscar?q=para         → sugerencias de autocompletado
- * POST /api/medicamentos/registrar-uso         → guarda/actualiza tras usar un medicamento
+ * GET  /api/medicamentos/buscar?q=ibu   → sugerencias
+ * POST /api/medicamentos/registrar-uso  → guarda o actualiza contador
  */
 @Slf4j
 @RestController
@@ -33,11 +32,16 @@ import java.util.stream.Collectors;
 public class MedicamentoCatalogoController {
 
     private final MedicamentoCatalogoRepository repo;
-
     private static final Pattern DIACRITICOS = Pattern.compile("\\p{M}");
 
-    // ── Buscar sugerencias ───────────────────────────────────────────────────
+    // ── DTO de entrada ────────────────────────────────────────────────────────
+    @Data
+    public static class RegistrarUsoRequest {
+        private String nombreGenerico;   // Ej: "Ibuprofeno"
+        private String nombreComercial;  // Ej: "BUPREX FLASH"  (opcional)
+    }
 
+    // ── Buscar sugerencias ────────────────────────────────────────────────────
     @GetMapping("/buscar")
     @PreAuthorize("hasAnyRole('SUPERADMINISTRADOR','MEDICO_ESPECIALISTA')")
     public ResponseEntity<ApiResponse<List<MedicamentoCatalogoResponse>>> buscar(
@@ -49,14 +53,11 @@ public class MedicamentoCatalogoController {
 
         String normalizado = normalizar(texto);
         List<MedicamentoCatalogoResponse> resultados = repo.buscarSugerencias(normalizado)
-                .stream()
-                .limit(8)
+                .stream().limit(10)
                 .map(m -> MedicamentoCatalogoResponse.builder()
                         .id(m.getId())
-                        .nombre(m.getNombre())
-                        .dosisSugerida(m.getDosisSugerida())
-                        .cantidadSugerida(m.getCantidadSugerida())
-                        .indicacionesSugeridas(m.getIndicacionesSugeridas())
+                        .nombreGenerico(m.getNombreGenerico())
+                        .nombreComercial(m.getNombreComercial())
                         .vecesUsado(m.getVecesUsado())
                         .build())
                 .collect(Collectors.toList());
@@ -64,54 +65,58 @@ public class MedicamentoCatalogoController {
         return ResponseEntity.ok(ApiResponse.ok("Sugerencias encontradas", resultados));
     }
 
-    // ── Registrar uso (guarda o actualiza frecuencia) ─────────────────────────
-
+    // ── Registrar uso ─────────────────────────────────────────────────────────
     /**
-     * Se llama automáticamente cada vez que el médico agrega un medicamento
-     * a una receta. Si ya existe, incrementa el contador de uso y actualiza
-     * los valores sugeridos; si no existe, lo crea.
+     * Se llama al agregar un medicamento a una receta.
+     * Clave de deduplicación: nombre genérico normalizado.
+     * Si ya existe → solo incrementa el contador y actualiza nombre comercial.
+     * Si no existe → crea el registro.
      */
     @PostMapping("/registrar-uso")
     @PreAuthorize("hasAnyRole('SUPERADMINISTRADOR','MEDICO_ESPECIALISTA')")
     @Transactional
     public ResponseEntity<ApiResponse<Void>> registrarUso(
-            @RequestBody MedicamentoRequest req) {
+            @RequestBody RegistrarUsoRequest req) {
 
-        if (req.getNombre() == null || req.getNombre().isBlank()) {
-            return ResponseEntity.ok(ApiResponse.ok("Sin nombre, no se registra", null));
+        if (req.getNombreGenerico() == null || req.getNombreGenerico().isBlank()) {
+            return ResponseEntity.ok(ApiResponse.ok("Sin nombre genérico, no se registra", null));
         }
 
-        String normalizado = normalizar(req.getNombre());
+        String normalizado = normalizar(req.getNombreGenerico());
 
         repo.findByNombreNormalizado(normalizado).ifPresentOrElse(existente -> {
-            existente.setDosisSugerida(req.getDosis());
-            existente.setCantidadSugerida(req.getCantidad());
-            existente.setIndicacionesSugeridas(req.getIndicaciones());
+            // Actualizar comercial solo si viene uno nuevo
+            if (req.getNombreComercial() != null && !req.getNombreComercial().isBlank()) {
+                existente.setNombreComercial(req.getNombreComercial().toUpperCase().trim());
+            }
             existente.setVecesUsado(existente.getVecesUsado() + 1);
             existente.setUltimaVezUsado(LocalDateTime.now());
             repo.save(existente);
+            log.debug("Medicamento actualizado: {}", existente.getNombreGenerico());
         }, () -> {
             Medicamento nuevo = Medicamento.builder()
-                    .nombre(req.getNombre())
+                    .nombreGenerico(capitalizar(req.getNombreGenerico().trim()))
+                    .nombreComercial(req.getNombreComercial() != null
+                            ? req.getNombreComercial().toUpperCase().trim() : null)
                     .nombreNormalizado(normalizado)
-                    .dosisSugerida(req.getDosis())
-                    .cantidadSugerida(req.getCantidad())
-                    .indicacionesSugeridas(req.getIndicaciones())
                     .vecesUsado(1)
                     .ultimaVezUsado(LocalDateTime.now())
                     .build();
             repo.save(nuevo);
+            log.info("Medicamento nuevo registrado: {}", nuevo.getNombreGenerico());
         });
 
         return ResponseEntity.ok(ApiResponse.ok("Registrado", null));
     }
 
-    // ── Helper ────────────────────────────────────────────────────────────────
-
-    /** Normaliza a mayúsculas sin tildes para evitar duplicados por acentos */
+    // ── Helpers ───────────────────────────────────────────────────────────────
     private String normalizar(String texto) {
-        String sinTildes = Normalizer.normalize(texto.trim(), Normalizer.Form.NFD);
-        sinTildes = DIACRITICOS.matcher(sinTildes).replaceAll("");
-        return sinTildes.toUpperCase();
+        String s = Normalizer.normalize(texto.trim(), Normalizer.Form.NFD);
+        return DIACRITICOS.matcher(s).replaceAll("").toUpperCase();
+    }
+
+    private String capitalizar(String s) {
+        if (s == null || s.isEmpty()) return s;
+        return s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();
     }
 }

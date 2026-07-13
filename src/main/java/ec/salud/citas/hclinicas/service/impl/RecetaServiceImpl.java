@@ -54,16 +54,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RecetaServiceImpl {
 
-    private final ConsultaRepository  consultaRepo;
-    private final RecetaRepository    recetaRepo;
+    private final ConsultaRepository consultaRepo;
+    private final RecetaRepository recetaRepo;
     private final ObjectMapper mapper;
 
     // ── Colores institucionales ───────────────────────────────────────────
-    private static final DeviceRgb ROSA       = new DeviceRgb(233, 30, 140);
+    private static final DeviceRgb ROSA = new DeviceRgb(233, 30, 140);
     private static final DeviceRgb ROSA_CLARO = new DeviceRgb(252, 228, 236);
-    private static final DeviceRgb AZUL       = new DeviceRgb(10, 35, 66);
-    private static final DeviceRgb GRIS       = new DeviceRgb(100, 116, 139);
-    private static final DeviceRgb MORADO     = new DeviceRgb(100, 20, 120);
+    private static final DeviceRgb AZUL = new DeviceRgb(10, 35, 66);
+    private static final DeviceRgb GRIS = new DeviceRgb(100, 116, 139);
+    private static final DeviceRgb MORADO = new DeviceRgb(100, 20, 120);
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -76,7 +76,7 @@ public class RecetaServiceImpl {
     @Value("${app.clinica.telefono:096 044 0040 - 099 146 3226}")
     private String telefono;
 
-    private static final String CORREO   = "draleon_alexandra@hotmail.com";
+    private static final String CORREO = "draleon_alexandra@hotmail.com";
     private static final String HOSPITAL = "HOSPITAL SAN JUAN";
     private static final String DIR_HOSP = "(Av. Jose Veloz y Sauces)";
 
@@ -155,15 +155,15 @@ public class RecetaServiceImpl {
             doc.setMargins(0, 0, 0, 0);
 
             PdfFont regular = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-            PdfFont bold    = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
-            PdfFont italic  = PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE);
+            PdfFont bold = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+            PdfFont italic = PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE);
 
             var pac = consulta.getHistoriaClinica().getPaciente();
             String nombrePac = pac.getNombreCompleto();
-            String edadPac   = pac.getFechaNacimiento() != null
+            String edadPac = pac.getFechaNacimiento() != null
                     ? (LocalDate.now().getYear() - pac.getFechaNacimiento().getYear()) + " años"
                     : "";
-            String fechaHoy  = LocalDate.now().format(FMT);
+            String fechaHoy = LocalDate.now().format(FMT);
 
             // ── Tabla principal: 2 columnas iguales ──────────────────────
             Table tabla = new Table(UnitValue.createPercentArray(new float[]{1f, 1f}))
@@ -191,7 +191,7 @@ public class RecetaServiceImpl {
             colDer.add(cabecera(bold, regular, italic));
             colDer.add(lineaSeparadora());
             colDer.add(filaCiudadFechaCorta(regular, bold, "Riobamba", fechaHoy));
-            colDer.add(seccionIndicaciones(regular, bold, req.getPrescripcion()));
+            colDer.add(seccionIndicaciones(regular, bold, req.getPrescripcion(), req.getMedicamentos()));
             colDer.add(firmaYProximaCita(regular, bold, req.getProximaCita()));
             colDer.add(pieColumna(regular));
 
@@ -220,24 +220,12 @@ public class RecetaServiceImpl {
                 .setPaddingLeft(8).setPaddingTop(6).setPaddingBottom(6)
                 .setVerticalAlignment(VerticalAlignment.MIDDLE);
         try {
-            byte[] logoBytes = getClass().getClassLoader()
-                    .getResourceAsStream("static/logo.png") != null
-                    ? getClass().getClassLoader()
-                    .getResourceAsStream("static/logo.png").readAllBytes()
-                    : null;
-            if (logoBytes != null) {
-                Image logo = new Image(ImageDataFactory.create(logoBytes))
-                        .setWidth(52).setHeight(52)
-                        .setHorizontalAlignment(HorizontalAlignment.CENTER);
-                iconoCell.add(logo);
-            } else {
-                // Fallback: símbolo si no se carga el logo
-                iconoCell.add(new Paragraph("♀")
-                        .setFont(bold).setFontSize(28)
-                        .setFontColor(ROSA)
-                        .setTextAlignment(TextAlignment.CENTER)
-                        .setMargin(0));
-            }
+            byte[] logoBytes = getClass()
+                    .getResourceAsStream("/imagenes/logo-dra.png").readAllBytes();
+            Image logo = new Image(ImageDataFactory.create(logoBytes))
+                    .setWidth(64).setHeight(64)
+                    .setHorizontalAlignment(HorizontalAlignment.CENTER);
+            iconoCell.add(logo);
         } catch (Exception e) {
             iconoCell.add(new Paragraph("♀")
                     .setFont(bold).setFontSize(28)
@@ -340,26 +328,38 @@ public class RecetaServiceImpl {
 
         if (meds != null) {
             for (MedicamentoRequest med : meds) {
-                // Nombre del medicamento en negrita
-                c.add(new Paragraph(med.getNombre() != null ? med.getNombre() : "")
-                        .setFont(bold).setFontSize(9).setFontColor(AZUL)
-                        .setMarginBottom(1).setMarginLeft(4));
 
-                // Dosis y cantidad
-                if (med.getDosis() != null || med.getCantidad() != null) {
-                    String detalle = "";
-                    if (med.getDosis() != null)     detalle += med.getDosis();
-                    if (med.getCantidad() != null)  detalle += "  —  " + med.getCantidad();
-                    c.add(new Paragraph(detalle.trim())
-                            .setFont(regular).setFontSize(8).setFontColor(GRIS)
+                // ── Nombre genérico en negrita ─────────────────────────────
+                // Ej: "Ibuprofeno 400 mg"
+                String generico = med.getNombreGenerico();
+                if (generico != null && !generico.isBlank()) {
+                    c.add(new Paragraph("- " + generico)
+                            .setFont(bold).setFontSize(9).setFontColor(AZUL)
+                            .setMarginBottom(1).setMarginLeft(2));
+                }
+
+                // ── Nombre comercial subrayado (si existe) ─────────────────
+                // Ej: "BUPREX FLASH"
+                String comercial = med.getNombreComercial();
+                if (comercial != null && !comercial.isBlank()) {
+                    c.add(new Paragraph(comercial.toUpperCase())
+                            .setFont(bold).setFontSize(8.5f).setFontColor(AZUL)
+                            .setUnderline(0.8f, -1.5f)
                             .setMarginBottom(1).setMarginLeft(8));
                 }
 
-                // Indicaciones de administración
-                if (med.getIndicaciones() != null && !med.getIndicaciones().isBlank()) {
-                    c.add(new Paragraph(med.getIndicaciones())
-                            .setFont(regular).setFontSize(7.5f).setFontColor(GRIS)
-                            .setMarginBottom(5).setMarginLeft(8));
+                // ── Presentación y cantidad ────────────────────────────────
+                // Ej: "Tabletas #10 (diez)"
+                String presentacion = med.getPresentacion();
+                if (presentacion != null && !presentacion.isBlank()) {
+                    c.add(new Paragraph(presentacion)
+                            .setFont(regular).setFontSize(8).setFontColor(GRIS)
+                            .setMarginBottom(4).setMarginLeft(8));
+                }
+
+                // Línea separadora sutil entre medicamentos
+                if (meds.indexOf(med) < meds.size() - 1) {
+                    c.add(new Paragraph(" ").setMarginBottom(2));
                 }
             }
         }
@@ -368,22 +368,50 @@ public class RecetaServiceImpl {
         return t;
     }
 
-    private Table seccionIndicaciones(PdfFont regular, PdfFont bold, String indicaciones) {
+    private Table seccionIndicaciones(PdfFont regular, PdfFont bold,
+                                      String prescripcion,
+                                      List<MedicamentoRequest> meds) {
         Table t = new Table(1).useAllAvailableWidth();
         Cell c = new Cell().setBorder(Border.NO_BORDER)
                 .setPaddingLeft(10).setPaddingRight(8).setPaddingTop(6);
 
         c.add(new Paragraph("INDICACIONES:")
                 .setFont(bold).setFontSize(12).setFontColor(AZUL)
-                .setMarginBottom(8));
+                .setMarginBottom(6));
 
-        if (indicaciones != null && !indicaciones.isBlank()) {
-            // Divide el texto en líneas para simular el formato del recetario
-            String[] lineas = indicaciones.split("\n");
-            for (String linea : lineas) {
+        // ── Indicaciones por medicamento ──────────────────────────────────
+        // Ej: "- Ibuprofeno 400 mg (BUPREX FLASH): 1 tab c/8h por 3 días"
+        if (meds != null) {
+            for (MedicamentoRequest med : meds) {
+                if (med.getIndicaciones() == null || med.getIndicaciones().isBlank()) continue;
+
+                String generico = med.getNombreGenerico() != null ? med.getNombreGenerico() : "";
+                String comercial = med.getNombreComercial() != null
+                        ? " (" + med.getNombreComercial().toUpperCase() + ")" : "";
+
+                // Línea de cabecera del medicamento
+                c.add(new Paragraph("- " + generico + comercial + ":")
+                        .setFont(bold).setFontSize(8f).setFontColor(AZUL)
+                        .setMarginBottom(1).setMarginLeft(2));
+
+                // Indicación propiamente
+                c.add(new Paragraph(med.getIndicaciones())
+                        .setFont(regular).setFontSize(8f).setFontColor(AZUL)
+                        .setMarginBottom(5).setMarginLeft(8));
+            }
+        }
+
+        // ── Prescripción / Recomendaciones generales ──────────────────────
+        if (prescripcion != null && !prescripcion.isBlank()) {
+            if (meds != null && !meds.isEmpty()) {
+                c.add(new Paragraph("Recomendaciones:")
+                        .setFont(bold).setFontSize(8f).setFontColor(ROSA)
+                        .setMarginTop(4).setMarginBottom(2));
+            }
+            for (String linea : prescripcion.split("\n")) {
                 c.add(new Paragraph(linea)
-                        .setFont(regular).setFontSize(8.5f).setFontColor(AZUL)
-                        .setMarginBottom(4));
+                        .setFont(regular).setFontSize(8f).setFontColor(AZUL)
+                        .setMarginBottom(3).setMarginLeft(4));
             }
         }
 

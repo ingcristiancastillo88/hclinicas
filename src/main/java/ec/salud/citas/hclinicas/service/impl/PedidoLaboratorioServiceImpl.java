@@ -1,6 +1,7 @@
 package ec.salud.citas.hclinicas.service.impl;
 
 import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.colors.DeviceRgb;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
@@ -11,6 +12,7 @@ import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.borders.SolidBorder;
 import com.itextpdf.layout.element.*;
+import com.itextpdf.layout.properties.HorizontalAlignment;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
 import com.itextpdf.layout.properties.VerticalAlignment;
@@ -42,17 +44,17 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PedidoLaboratorioServiceImpl {
 
-    private final ConsultaRepository          consultaRepo;
+    private final ConsultaRepository consultaRepo;
     private final PedidoLaboratorioRepository pedidoRepo;
     private final ObjectMapper mapper;
 
-    private static final DeviceRgb ROSA        = new DeviceRgb(233, 30, 140);
-    private static final DeviceRgb ROSA_CLARO  = new DeviceRgb(252, 228, 236);
-    private static final DeviceRgb MORADO      = new DeviceRgb(100, 20, 120);
-    private static final DeviceRgb MORADO_OSC  = new DeviceRgb(70, 10, 90);
-    private static final DeviceRgb AZUL        = new DeviceRgb(10, 35, 66);
-    private static final DeviceRgb GRIS        = new DeviceRgb(100, 116, 139);
-    private static final DeviceRgb BLANCO      = new DeviceRgb(255, 255, 255);
+    private static final DeviceRgb ROSA = new DeviceRgb(233, 30, 140);
+    private static final DeviceRgb ROSA_CLARO = new DeviceRgb(252, 228, 236);
+    private static final DeviceRgb MORADO = new DeviceRgb(100, 20, 120);
+    private static final DeviceRgb MORADO_OSC = new DeviceRgb(70, 10, 90);
+    private static final DeviceRgb AZUL = new DeviceRgb(10, 35, 66);
+    private static final DeviceRgb GRIS = new DeviceRgb(100, 116, 139);
+    private static final DeviceRgb BLANCO = new DeviceRgb(255, 255, 255);
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -62,7 +64,7 @@ public class PedidoLaboratorioServiceImpl {
     @Value("${app.clinica.telefono:096 044 0040 - 099 146 3226}")
     private String telefono;
 
-    private static final String CORREO   = "draleon_alexandra@hotmail.com";
+    private static final String CORREO = "draleon_alexandra@hotmail.com";
     private static final String HOSPITAL = "HOSPITAL SAN JUAN";
     private static final String DIR_HOSP = "(Av. Jose Veloz y Sauces)";
 
@@ -139,8 +141,8 @@ public class PedidoLaboratorioServiceImpl {
             doc.setMargins(20, 30, 20, 30);
 
             PdfFont regular = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-            PdfFont bold    = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
-            PdfFont italic  = PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE);
+            PdfFont bold = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+            PdfFont italic = PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE);
 
             var pac = consulta.getHistoriaClinica().getPaciente();
 
@@ -225,15 +227,18 @@ public class PedidoLaboratorioServiceImpl {
                     .add(new Paragraph()
                             .add(new Text("MONITOREO FETAL ELECTRÓNICO  ").setFont(bold).setFontSize(8))
                             .add(new Text(req.getMonitoreoFetal() != null && req.getMonitoreoFetal()
-                                    ? "[X] " : "[ ]").setFont(bold).setFontSize(9)
+                                    ? "[X]" : "[ ]").setFont(bold).setFontSize(9)
                                     .setFontColor(req.getMonitoreoFetal() != null && req.getMonitoreoFetal()
-                                            ? new DeviceRgb(22,163,74) : GRIS))));
+                                            ? new DeviceRgb(22, 163, 74) : GRIS))));
             monFetal.addCell(campoLinea(bold, regular, "FUM: ", req.getFum(), false));
             monFetal.addCell(campoLinea(bold, regular, "EG: ", req.getEg(), false));
             doc.add(monFetal);
 
             // ── Segunda tabla Resumen ─────────────────────────────────────
             doc.add(tablaResumenDiagnostico(bold, regular, "", "", ""));
+
+            // ── CIE-10 e Indicaciones de la Consulta ─────────────────────
+            agregarCie10EIndicaciones(doc, bold, regular, consulta, req);
 
             // ── Firma ─────────────────────────────────────────────────────
             agregarFirmaYPie(doc, regular, bold);
@@ -262,8 +267,8 @@ public class PedidoLaboratorioServiceImpl {
             doc.setMargins(20, 25, 20, 25);
 
             PdfFont regular = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-            PdfFont bold    = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
-            PdfFont italic  = PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE);
+            PdfFont bold = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+            PdfFont italic = PdfFontFactory.createFont(StandardFonts.HELVETICA_OBLIQUE);
 
             var pac = consulta.getHistoriaClinica().getPaciente();
             Map<String, List<String>> exs = req.getExamenesSeleccionados() != null
@@ -300,15 +305,15 @@ public class PedidoLaboratorioServiceImpl {
             row2.addCell(new Cell().setBorder(Border.NO_BORDER)
                     .add(new Paragraph()
                             .add(new Text("Embarazo: Si ").setFont(regular).setFontSize(8))
-                            .add(new Text(embarazoSi ? "[X] " : "[ ]")
+                            .add(new Text(embarazoSi ? "[X]" : "[ ]")
                                     .setFont(bold).setFontSize(8)
-                                    .setFontColor(embarazoSi ? new DeviceRgb(22,163,74) : GRIS))));
+                                    .setFontColor(embarazoSi ? new DeviceRgb(22, 163, 74) : GRIS))));
             row2.addCell(new Cell().setBorder(Border.NO_BORDER)
                     .add(new Paragraph()
                             .add(new Text("No ").setFont(regular).setFontSize(8))
-                            .add(new Text(embarazoNo ? "[X] " : "[ ]")
+                            .add(new Text(embarazoNo ? "[X]" : "[ ]")
                                     .setFont(bold).setFontSize(8)
-                                    .setFontColor(embarazoNo ? new DeviceRgb(22,163,74) : GRIS))));
+                                    .setFontColor(embarazoNo ? new DeviceRgb(22, 163, 74) : GRIS))));
             row2.addCell(campoLinea(bold, regular, "Sem/Gestación: ",
                     req.getSemGestacion() != null ? req.getSemGestacion() : "", false));
             doc.add(row2);
@@ -422,6 +427,9 @@ public class PedidoLaboratorioServiceImpl {
 
             doc.add(tabExamenes);
 
+            // ── CIE-10 e Indicaciones de la Consulta ─────────────────────
+            agregarCie10EIndicaciones(doc, bold, regular, consulta, req);
+
             // ── Firma y pie ───────────────────────────────────────────────
             agregarFirmaYPie(doc, regular, bold);
 
@@ -443,11 +451,21 @@ public class PedidoLaboratorioServiceImpl {
                 .setBackgroundColor(ROSA_CLARO)
                 .setMarginBottom(0);
 
+        // Logo real — mismo path que PdfConsultaServiceImpl
         Cell iconoCell = new Cell().setBorder(Border.NO_BORDER)
                 .setPadding(8).setVerticalAlignment(VerticalAlignment.MIDDLE);
-        iconoCell.add(new Paragraph("♀")
-                .setFont(bold).setFontSize(36)
-                .setFontColor(ROSA).setTextAlignment(TextAlignment.CENTER).setMargin(0));
+        try {
+            byte[] logoBytes = getClass()
+                    .getResourceAsStream("/imagenes/logo-dra.png").readAllBytes();
+            Image logo = new Image(ImageDataFactory.create(logoBytes))
+                    .setWidth(70).setHeight(70)
+                    .setHorizontalAlignment(HorizontalAlignment.CENTER);
+            iconoCell.add(logo);
+        } catch (Exception e) {
+            iconoCell.add(new Paragraph("♀")
+                    .setFont(bold).setFontSize(36)
+                    .setFontColor(ROSA).setTextAlignment(TextAlignment.CENTER).setMargin(0));
+        }
         cab.addCell(iconoCell);
 
         Cell nombreCell = new Cell().setBorder(Border.NO_BORDER)
@@ -595,6 +613,92 @@ public class PedidoLaboratorioServiceImpl {
                 .setPadding(3)
                 .add(new Paragraph(texto != null ? texto : "")
                         .setFont(regular).setFontSize(8).setFontColor(AZUL).setMargin(0));
+    }
+
+    /**
+     * Bloque CIE-10 + indicaciones de la consulta.
+     * Muestra el diagnóstico oficial CIE-10 y las indicaciones médicas
+     * directamente en el pedido para que el laboratorio tenga contexto clínico.
+     */
+    private void agregarCie10EIndicaciones(Document doc, PdfFont bold, PdfFont regular,
+                                           Consulta consulta, PedidoLaboratorioRequest req) {
+        // CIE-10 desde la consulta o desde el request
+        String codigoCie = consulta.getCodigoCie10() != null
+                ? consulta.getCodigoCie10()
+                : req.getCodigoCie10();
+        String diagnostico = consulta.getDiagnosticoPrincipal() != null
+                ? consulta.getDiagnosticoPrincipal()
+                : req.getDiagnostico();
+        String indicaciones = consulta.getIndicaciones();
+        String cie10Sec = consulta.getCodigosCie10SecundariosJson();
+
+        boolean tieneCie = (codigoCie != null && !codigoCie.isBlank())
+                || (diagnostico != null && !diagnostico.isBlank());
+
+        if (!tieneCie && (indicaciones == null || indicaciones.isBlank())) return;
+
+        doc.add(new Paragraph("\n").setFontSize(4));
+
+        // Cabecera de sección
+        doc.add(new Table(1).useAllAvailableWidth()
+                .addCell(new Cell().setBorder(Border.NO_BORDER)
+                        .setBackgroundColor(MORADO)
+                        .setPadding(4)
+                        .add(new Paragraph("DIAGNÓSTICO CIE-10 E INDICACIONES MÉDICAS")
+                                .setFont(bold).setFontSize(7.5f)
+                                .setFontColor(BLANCO).setMargin(0))));
+
+        // Tabla diagnóstico
+        if (tieneCie) {
+            Table tabCie = new Table(UnitValue.createPercentArray(new float[]{1f, 3f}))
+                    .useAllAvailableWidth()
+                    .setBackgroundColor(new DeviceRgb(252, 247, 250))
+                    .setMarginBottom(4);
+
+            if (codigoCie != null && !codigoCie.isBlank()) {
+                tabCie.addCell(new Cell().setBorder(Border.NO_BORDER)
+                        .setBorderBottom(new SolidBorder(ROSA_CLARO, 0.5f)).setPadding(4)
+                        .add(new Paragraph("CIE-10 Principal:")
+                                .setFont(bold).setFontSize(7.5f).setFontColor(MORADO).setMargin(0)));
+                tabCie.addCell(new Cell().setBorder(Border.NO_BORDER)
+                        .setBorderBottom(new SolidBorder(ROSA_CLARO, 0.5f)).setPadding(4)
+                        .add(new Paragraph(codigoCie + (diagnostico != null ? "  —  " + diagnostico : ""))
+                                .setFont(bold).setFontSize(8f).setFontColor(AZUL).setMargin(0)));
+            } else if (diagnostico != null && !diagnostico.isBlank()) {
+                tabCie.addCell(new Cell().setBorder(Border.NO_BORDER)
+                        .setBorderBottom(new SolidBorder(ROSA_CLARO, 0.5f)).setPadding(4)
+                        .add(new Paragraph("Diagnóstico:")
+                                .setFont(bold).setFontSize(7.5f).setFontColor(MORADO).setMargin(0)));
+                tabCie.addCell(new Cell().setBorder(Border.NO_BORDER)
+                        .setBorderBottom(new SolidBorder(ROSA_CLARO, 0.5f)).setPadding(4)
+                        .add(new Paragraph(diagnostico)
+                                .setFont(regular).setFontSize(8f).setFontColor(AZUL).setMargin(0)));
+            }
+
+            // CIE-10 secundarios si los hay
+            if (cie10Sec != null && !cie10Sec.isBlank()) {
+                tabCie.addCell(new Cell().setBorder(Border.NO_BORDER).setPadding(4)
+                        .add(new Paragraph("CIE-10 Secundarios:")
+                                .setFont(bold).setFontSize(7.5f).setFontColor(GRIS).setMargin(0)));
+                tabCie.addCell(new Cell().setBorder(Border.NO_BORDER).setPadding(4)
+                        .add(new Paragraph(cie10Sec)
+                                .setFont(regular).setFontSize(7.5f).setFontColor(AZUL).setMargin(0)));
+            }
+
+            doc.add(tabCie);
+        }
+
+        // Indicaciones médicas
+        if (indicaciones != null && !indicaciones.isBlank()) {
+            doc.add(new Paragraph()
+                    .add(new Text("Indicaciones médicas:  ")
+                            .setFont(bold).setFontSize(8f).setFontColor(MORADO))
+                    .add(new Text(indicaciones)
+                            .setFont(regular).setFontSize(8f).setFontColor(AZUL))
+                    .setBackgroundColor(new DeviceRgb(252, 247, 250))
+                    .setBorderLeft(new SolidBorder(MORADO, 2))
+                    .setPadding(5).setMarginBottom(4));
+        }
     }
 
     private void agregarFirmaYPie(Document doc, PdfFont regular, PdfFont bold) {

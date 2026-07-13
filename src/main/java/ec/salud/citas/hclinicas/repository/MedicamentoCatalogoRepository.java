@@ -15,8 +15,7 @@ public interface MedicamentoCatalogoRepository extends JpaRepository<Medicamento
     Optional<Medicamento> findByNombreNormalizado(String nombreNormalizado);
 
     /**
-     * Busca medicamentos cuyo nombre normalizado empieza o contiene el texto
-     * escrito, ordenados por frecuencia de uso (los más usados primero).
+     * Busca por nombre genérico normalizado — los más usados primero.
      */
     @Query("""
         SELECT m FROM Medicamento m
