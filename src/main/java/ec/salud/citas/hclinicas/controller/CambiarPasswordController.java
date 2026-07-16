@@ -4,7 +4,7 @@ import ec.salud.citas.hclinicas.dto.request.CambiarPasswordRequest;
 import ec.salud.citas.hclinicas.dto.response.ApiResponse;
 import ec.salud.citas.hclinicas.entity.Usuario;
 import ec.salud.citas.hclinicas.repository.UsuarioRepository;
-import ec.salud.citas.hclinicas.service.EmailService;
+import ec.salud.citas.hclinicas.service.impl.EmailService;
 import ec.salud.citas.hclinicas.exception.ReglaNegocioException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

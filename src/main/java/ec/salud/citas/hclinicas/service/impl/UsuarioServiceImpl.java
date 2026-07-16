@@ -12,7 +12,6 @@ import ec.salud.citas.hclinicas.exception.ReglaNegocioException;
 import ec.salud.citas.hclinicas.repository.RolRepository;
 import ec.salud.citas.hclinicas.repository.UsuarioRepository;
 import ec.salud.citas.hclinicas.service.AuditoriaService;
-import ec.salud.citas.hclinicas.service.EmailService;
 import ec.salud.citas.hclinicas.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

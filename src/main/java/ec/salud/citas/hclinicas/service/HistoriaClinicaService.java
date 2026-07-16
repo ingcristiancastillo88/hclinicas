@@ -12,8 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 public interface HistoriaClinicaService {
 
     // Historia
-    HistoriaClinicaResponse crearOActualizar(
-            CrearHistoriaClinicaRequest request, String ipOrigen);
+    HistoriaClinicaResponse crearOActualizar(CrearHistoriaClinicaRequest request, String ipOrigen);
 
     HistoriaClinicaResponse obtenerPorId(Long id);
 

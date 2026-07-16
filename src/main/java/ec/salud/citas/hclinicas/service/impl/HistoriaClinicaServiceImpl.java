@@ -41,10 +41,10 @@ import java.util.stream.Collectors;
 public class HistoriaClinicaServiceImpl implements HistoriaClinicaService {
 
     private final HistoriaClinicaRepository historiaRepo;
-    private final ConsultaRepository        consultaRepo;
-    private final ArchivoAdjuntoRepository  archivoRepo;
-    private final PacienteRepository        pacienteRepo;
-    private final AuditoriaService          auditoriaService;
+    private final ConsultaRepository consultaRepo;
+    private final ArchivoAdjuntoRepository archivoRepo;
+    private final PacienteRepository pacienteRepo;
+    private final AuditoriaService auditoriaService;
 
     @Value("${app.archivos.ruta-base:uploads/archivos}")
     private String rutaBase;
@@ -56,9 +56,9 @@ public class HistoriaClinicaServiceImpl implements HistoriaClinicaService {
             Set.of("jpg", "jpeg", "png", "pdf", "docx", "doc", "xlsx");
     private static final long MAX_BYTES = 10 * 1024 * 1024L; // 10 MB
 
-    private static final String MOD_HISTORIA  = "HISTORIAS_CLINICAS";
-    private static final String MOD_CONSULTA  = "CONSULTAS";
-    private static final String MOD_ARCHIVO   = "ARCHIVOS";
+    private static final String MOD_HISTORIA = "HISTORIAS_CLINICAS";
+    private static final String MOD_CONSULTA = "CONSULTAS";
+    private static final String MOD_ARCHIVO = "ARCHIVOS";
 
     // ── Historia Clínica ──────────────────────────────────────────────────────
 
@@ -127,24 +127,62 @@ public class HistoriaClinicaServiceImpl implements HistoriaClinicaService {
 
         Consulta consulta = Consulta.builder()
                 .historiaClinica(historia)
+                // ── Parámetros de la visita ──────────────────────────────
                 .fechaConsulta(req.getFechaConsulta())
+                .tipoConsulta(req.getTipoConsulta())
+                .estaEmbarazada(req.getEstaEmbarazada())
+                // ── Anamnesis ────────────────────────────────────────────
                 .motivoConsulta(req.getMotivoConsulta())
+                .enfermedadActual(req.getEnfermedadActual())
+                .reporteExamenesPrevios(req.getReporteExamenesPrevios())
+                // ── Signos Vitales ───────────────────────────────────────
                 .peso(req.getPeso())
                 .talla(req.getTalla())
                 .presionArterial(req.getPresionArterial())
                 .frecuenciaCardiaca(req.getFrecuenciaCardiaca())
+                .frecuenciaCardiacaTexto(req.getFrecuenciaCardiacaTexto())
                 .temperatura(req.getTemperatura())
+                .temperaturaTexto(req.getTemperaturaTexto())
                 .saturacionOxigeno(req.getSaturacionOxigeno())
+                .saturacionTexto(req.getSaturacionTexto())
+                .frecuenciaRespiratoriaTexto(req.getFrecuenciaRespiratoriaTexto())
                 .semanasGestacion(req.getSemanasGestacion())
+                // ── Módulo Materno-Fetal ──────────────────────────────────
+                .fumConsulta(req.getFumConsulta())
+                .alturaUterina(req.getAlturaUterina())
+                .fcFetal(req.getFcFetal())
+                .presentacionFetal(req.getPresentacionFetal())
+                .tonoUterino(req.getTonoUterino())
+                .movimientosFetales(req.getMovimientosFetales())
+                .pesoFetalEstimado(req.getPesoFetalEstimado())
+                .scoreMama(req.getScoreMama())
+                // ── Examen Físico por Sistemas ────────────────────────────
                 .examenFisico(req.getExamenFisico())
+                .examenCabeza(req.getExamenCabeza())
+                .examenTorax(req.getExamenTorax())
+                .examenAbdomen(req.getExamenAbdomen())
+                .examenGenital(req.getExamenGenital())
+                .examenExtremidades(req.getExamenExtremidades())
+                // ── Módulo Ginecológico ───────────────────────────────────
+                .inspeccionVulva(req.getInspeccionVulva())
+                .especuloscopia(req.getEspeculoscopia())
+                .tactoVaginal(req.getTactoVaginal())
+                .examenMamas(req.getExamenMamas())
+                // ── Diagnóstico ───────────────────────────────────────────
                 .diagnosticoPrincipal(req.getDiagnosticoPrincipal())
                 .diagnosticoSecundario(req.getDiagnosticoSecundario())
                 .codigoCie10(req.getCodigoCie10())
+                .codigosCie10SecundariosJson(
+                        req.getCodigosCie10Secundarios() != null
+                                ? String.join(",", req.getCodigosCie10Secundarios())
+                                : null)
+                // ── Tratamiento ───────────────────────────────────────────
                 .tratamiento(req.getTratamiento())
                 .medicacion(req.getMedicacion())
                 .indicaciones(req.getIndicaciones())
                 .proximaCita(req.getProximaCita())
                 .observaciones(req.getObservaciones())
+                .fechaUltimaMenustracion(req.getFechaUltimaMenustracion())
                 .build();
 
         consulta = consultaRepo.save(consulta);
@@ -163,6 +201,7 @@ public class HistoriaClinicaServiceImpl implements HistoriaClinicaService {
 
         Consulta c = getConsultaActiva(id);
 
+        // ── Campos originales ─────────────────────────────────────────────────
         c.setFechaConsulta(req.getFechaConsulta());
         c.setMotivoConsulta(req.getMotivoConsulta());
         c.setPeso(req.getPeso());
@@ -181,6 +220,52 @@ public class HistoriaClinicaServiceImpl implements HistoriaClinicaService {
         c.setIndicaciones(req.getIndicaciones());
         c.setProximaCita(req.getProximaCita());
         c.setObservaciones(req.getObservaciones());
+
+        // ── Parámetros de la visita ───────────────────────────────────────────
+        c.setTipoConsulta(req.getTipoConsulta());
+        c.setEstaEmbarazada(req.getEstaEmbarazada());
+
+        // ── Anamnesis ─────────────────────────────────────────────────────────
+        c.setEnfermedadActual(req.getEnfermedadActual());
+        c.setReporteExamenesPrevios(req.getReporteExamenesPrevios());
+
+        // ── Signos vitales en texto ───────────────────────────────────────────
+        c.setFrecuenciaCardiacaTexto(req.getFrecuenciaCardiacaTexto());
+        c.setTemperaturaTexto(req.getTemperaturaTexto());
+        c.setSaturacionTexto(req.getSaturacionTexto());
+        c.setFrecuenciaRespiratoriaTexto(req.getFrecuenciaRespiratoriaTexto());
+
+        // ── Módulo Materno-Fetal ──────────────────────────────────────────────
+        c.setFumConsulta(req.getFumConsulta());
+        c.setAlturaUterina(req.getAlturaUterina());
+        c.setFcFetal(req.getFcFetal());
+        c.setPresentacionFetal(req.getPresentacionFetal());
+        c.setTonoUterino(req.getTonoUterino());
+        c.setMovimientosFetales(req.getMovimientosFetales());
+        c.setPesoFetalEstimado(req.getPesoFetalEstimado());
+        c.setScoreMama(req.getScoreMama());
+
+        // ── Examen Físico por Sistemas ────────────────────────────────────────
+        c.setExamenCabeza(req.getExamenCabeza());
+        c.setExamenTorax(req.getExamenTorax());
+        c.setExamenAbdomen(req.getExamenAbdomen());
+        c.setExamenGenital(req.getExamenGenital());
+        c.setExamenExtremidades(req.getExamenExtremidades());
+
+        // ── Módulo Ginecológico ───────────────────────────────────────────────
+        c.setInspeccionVulva(req.getInspeccionVulva());
+        c.setEspeculoscopia(req.getEspeculoscopia());
+        c.setTactoVaginal(req.getTactoVaginal());
+        c.setExamenMamas(req.getExamenMamas());
+
+        // ── CIE-10 secundarios ────────────────────────────────────────────────
+        c.setCodigosCie10SecundariosJson(
+                req.getCodigosCie10Secundarios() != null
+                        ? String.join(",", req.getCodigosCie10Secundarios())
+                        : null);
+
+        // ── FUM de antecedentes ───────────────────────────────────────────────
+        c.setFechaUltimaMenustracion(req.getFechaUltimaMenustracion());
 
         c = consultaRepo.save(c);
         auditoriaService.registrar("UPDATE", MOD_CONSULTA,
@@ -415,7 +500,10 @@ public class HistoriaClinicaServiceImpl implements HistoriaClinicaService {
     }
 
     private TipoArchivo parseTipo(String tipo) {
-        try { return TipoArchivo.valueOf(tipo.toUpperCase()); }
-        catch (Exception e) { return TipoArchivo.OTRO; }
+        try {
+            return TipoArchivo.valueOf(tipo.toUpperCase());
+        } catch (Exception e) {
+            return TipoArchivo.OTRO;
+        }
     }
 }
